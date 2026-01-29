@@ -81,7 +81,7 @@ export default function Header() {
           <button className="app-nav-link" type="button" onClick={() => navigate('/home')}>
             Trang Chủ
           </button>
-          <button className="app-nav-link" type="button">
+          <button className="app-nav-link" type="button" onClick={() => navigate('/products')}>
             Sản Phẩm Bán
           </button>
           <button className="app-nav-link" type="button">

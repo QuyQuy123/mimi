@@ -60,11 +60,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .date-input-group {
   position: relative;
   flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
 }
 
 .date-icon {
@@ -73,6 +77,8 @@
   top: 50%;
   transform: translateY(-50%);
   color: #9ca3af;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .date-input {
@@ -82,6 +88,39 @@
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.2s;
+  background: white;
+  color: #374151;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.date-input::-webkit-datetime-edit {
+  padding: 0;
+}
+
+.date-input::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+.date-input::-webkit-datetime-edit-text {
+  color: #6b7280;
+  padding: 0 2px;
+}
+
+.date-input::-webkit-datetime-edit-month-field,
+.date-input::-webkit-datetime-edit-day-field,
+.date-input::-webkit-datetime-edit-year-field {
+  color: #374151;
 }
 
 .date-input:focus {
@@ -90,9 +129,15 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+.date-input:hover {
+  border-color: #9ca3af;
+}
+
 .date-separator {
   color: #6b7280;
   font-weight: 500;
+  flex-shrink: 0;
+  padding: 0 4px;
 }
 
 .apply-filter-btn {
