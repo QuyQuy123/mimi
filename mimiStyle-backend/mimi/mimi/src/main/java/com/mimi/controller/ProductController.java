@@ -1,7 +1,9 @@
 package com.mimi.controller;
 
 import com.mimi.domain.Product;
+import com.mimi.domain.ProductImage;
 import com.mimi.dto.response.ProductResponse;
+import com.mimi.repository.ProductImageRepository;
 import com.mimi.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 public class ProductController {
 
     private final ProductService productService;
+    private final ProductImageRepository productImageRepository;
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<ProductResponse>> getUserProducts(@PathVariable Long userId) {
@@ -112,6 +115,42 @@ public class ProductController {
         productService.deleteProduct(id);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/{id}/images")
+    public ResponseEntity<?> saveProductImageNames(@PathVariable Long id, @RequestBody List<String> imageFilenames) {
+        try {
+            Product product = productService.getProductById(id);
+            if (product == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
+            }
+
+            if (imageFilenames == null || imageFilenames.isEmpty()) {
+                return ResponseEntity.badRequest().body("Image filenames are required");
+            }
+
+            List<ProductImage> savedImages = new java.util.ArrayList<>();
+            boolean isFirst = true;
+
+            for (String filename : imageFilenames) {
+                if (filename == null || filename.trim().isEmpty()) {
+                    continue;
+                }
+
+                ProductImage productImage = new ProductImage();
+                productImage.setProduct(product);
+                productImage.setImageUrl(filename); // Store just the filename, e.g., "product_1_abc123.jpg"
+                productImage.setIsThumbnail(isFirst);
+                savedImages.add(productImageRepository.save(productImage));
+
+                isFirst = false;
+            }
+
+            return ResponseEntity.ok(savedImages);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
+    }
     
     private ProductResponse mapToProductResponse(Product product) {
         ProductResponse response = new ProductResponse();
@@ -137,6 +176,20 @@ public class ProductController {
         if (product.getCategory() != null) {
             response.setCategoryId(product.getCategory().getId());
             response.setCategoryName(product.getCategory().getName());
+        }
+
+        // Map images - need to fetch them explicitly due to LAZY loading
+        try {
+            List<ProductImage> images = productImageRepository.findByProductId(product.getId());
+            if (images != null && !images.isEmpty()) {
+                List<String> imageUrls = images.stream()
+                        .map(ProductImage::getImageUrl)
+                        .collect(Collectors.toList());
+                response.setImages(imageUrls);
+            }
+        } catch (Exception e) {
+            // If images can't be loaded, just skip them
+            System.err.println("Error loading images for product " + product.getId() + ": " + e.getMessage());
         }
         
         return response;

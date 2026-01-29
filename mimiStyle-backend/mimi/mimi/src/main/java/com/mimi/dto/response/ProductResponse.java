@@ -35,4 +35,7 @@ public class ProductResponse {
     // Category info
     private Long categoryId;
     private String categoryName;
+    
+    // Images
+    private List<String> images;
 }

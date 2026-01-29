@@ -124,3 +124,20 @@ export async function getAllProducts() {
 
   return response.json();
 }
+
+export async function saveProductImageNames(productId, filenames) {
+  const response = await fetch(`${API_BASE_URL}/products/${productId}/images`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(filenames),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Không thể lưu tên ảnh sản phẩm');
+  }
+
+  return response.json();
+}

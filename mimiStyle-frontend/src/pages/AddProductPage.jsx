@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, MapPin } from 'lucide-react';
 import Layout from '../components/layout/Layout';
-import { createProduct } from '../api/product';
+import { createProduct, saveProductImageNames } from '../api/product';
 import '../styles/AddProductPage.css';
 
 const AddProductPage = () => {
@@ -21,6 +21,7 @@ const AddProductPage = () => {
     rentUnit: 'MONTH',
     address: '',
     images: [],
+    imageFilenames: [],
     certificates: []
   });
 
@@ -46,12 +47,34 @@ const AddProductPage = () => {
     }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    // In a real app, you would upload these to a server
+    const imageFilenames = [];
+    
+    for (const file of files) {
+      // Generate unique filename: product_{timestamp}_{random}.{ext}
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 9);
+      const ext = file.name.split('.').pop() || 'jpg';
+      const filename = `product_${timestamp}_${random}.${ext}`;
+      
+      // Create download link to save file to public/img-product/
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      imageFilenames.push(filename);
+    }
+    
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, ...files]
+      images: [...prev.images, ...files],
+      imageFilenames: [...(prev.imageFilenames || []), ...imageFilenames]
     }));
   };
 
@@ -125,7 +148,18 @@ const AddProductPage = () => {
       };
 
       console.log('Sending product data:', productData);
-      await createProduct(productData);
+      const createdProduct = await createProduct(productData);
+      
+      // Save image filenames to database if any
+      if (formData.imageFilenames && formData.imageFilenames.length > 0) {
+        try {
+          await saveProductImageNames(createdProduct.id, formData.imageFilenames);
+        } catch (imageError) {
+          console.error('Error saving image filenames:', imageError);
+          // Don't fail the whole operation if image save fails
+          setSubmitError('Sản phẩm đã được tạo nhưng có lỗi khi lưu tên ảnh: ' + imageError.message);
+        }
+      }
       
       // Show success message
       setSuccessMessage('Sản phẩm đã được tạo thành công!');
@@ -299,6 +333,9 @@ const AddProductPage = () => {
             {formData.images.length > 0 && (
               <div className="uploaded-files">
                 <p>{formData.images.length} ảnh đã chọn</p>
+                <p className="upload-hint">
+                  ⚠️ Vui lòng copy các ảnh đã tải xuống vào thư mục <code>public/img-product/</code>
+                </p>
               </div>
             )}
           </section>

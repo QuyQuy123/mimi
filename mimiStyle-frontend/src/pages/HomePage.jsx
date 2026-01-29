@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import { getAllProducts } from '../api/product';
+import { API_ORIGIN } from '../api/config';
 import sterilizerImg from '../assets/img-product/may-tiet-trung-binh-sua-co-say-kho-bang-tia-uv-spectra-1.jpg';
 import pumpImg from '../assets/img-product/May-hut-sua-dien-doi-Resonance-3-Fb1160VN-3.jpeg';
 import cribImg from '../assets/img-product/top-5-thuong-hieu-noi-cho-be-duoc-ua-chuong-nhat-hien-nay-2020-1595675197.png';
@@ -83,16 +84,23 @@ export default function HomePage() {
   };
 
   const getProductImageSrc = (product) => {
+    // Ưu tiên ảnh từ database (tên file trong public/img-product/)
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      const imageUrl = product.images[0];
+      if (typeof imageUrl === 'string') {
+        // Tên file từ database, load từ /img-product/
+        return `/img-product/${imageUrl}`;
+      }
+      // Nếu là object có imageUrl
+      if (imageUrl?.imageUrl) {
+        return `/img-product/${imageUrl.imageUrl}`;
+      }
+    }
+
+    // Fallback: dùng imageMap nếu có
     if (imageMap[product.name]) return imageMap[product.name];
 
-    if (Array.isArray(product.images) && typeof product.images[0] === 'string') {
-      return product.images[0];
-    }
-
-    if (Array.isArray(product.images) && product.images[0]?.imageUrl) {
-      return product.images[0].imageUrl;
-    }
-
+    // Fallback cuối cùng: placeholder
     return 'https://via.placeholder.com/120x120/f0f0f0/666?text=Product';
   };
 

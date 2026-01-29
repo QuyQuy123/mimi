@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import { getUserProducts, deleteProduct } from '../api/product';
+import { getUserProducts, deleteProduct, updateProduct } from '../api/product';
+import { API_ORIGIN } from '../api/config';
 import sterilizerImg from '../assets/img-product/may-tiet-trung-binh-sua-co-say-kho-bang-tia-uv-spectra-1.jpg';
 import pumpImg from '../assets/img-product/May-hut-sua-dien-doi-Resonance-3-Fb1160VN-3.jpeg';
 import cribImg from '../assets/img-product/top-5-thuong-hieu-noi-cho-be-duoc-ua-chuong-nhat-hien-nay-2020-1595675197.png';
@@ -14,6 +15,23 @@ const ProductManagementPage = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    description: '',
+    tradeType: 'BUY_ONLY',
+    condition: 'NEW',
+    price: '',
+    rentPrice: '',
+    rentUnit: 'MONTH',
+    address: '',
+    status: 'ACTIVE'
+  });
+  const [editErrors, setEditErrors] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
+  const [editSubmitError, setEditSubmitError] = useState('');
+  const [editSuccessMessage, setEditSuccessMessage] = useState('');
 
   // Tạm thời mock user ID - sau này sẽ lấy từ user trong session
   const userId = 1;
@@ -106,6 +124,153 @@ const ProductManagementPage = () => {
     }
   };
 
+  const handleEdit = (product) => {
+    setEditingProduct(product);
+    setEditFormData({
+      name: product.name || '',
+      description: product.description || '',
+      tradeType: product.tradeType || 'BUY_ONLY',
+      condition: getConditionFromPercentage(product.conditionPercentage),
+      price: product.buyPrice ? product.buyPrice.toString() : '',
+      rentPrice: product.rentPrice ? product.rentPrice.toString() : '',
+      rentUnit: product.rentUnit || 'MONTH',
+      address: product.addressContact || '',
+      status: product.status || 'ACTIVE'
+    });
+    setIsEditing(true);
+    setEditErrors({});
+    setEditSubmitError('');
+    setEditSuccessMessage('');
+  };
+
+  const handleCloseEdit = () => {
+    setIsEditing(false);
+    setEditingProduct(null);
+    setEditFormData({
+      name: '',
+      description: '',
+      tradeType: 'BUY_ONLY',
+      condition: 'NEW',
+      price: '',
+      rentPrice: '',
+      rentUnit: 'MONTH',
+      address: '',
+      status: 'ACTIVE'
+    });
+    setEditErrors({});
+    setEditSubmitError('');
+    setEditSuccessMessage('');
+  };
+
+  const getConditionFromPercentage = (percentage) => {
+    if (percentage === 100) return 'NEW';
+    if (percentage >= 90) return 'LIKE_NEW';
+    return 'USED';
+  };
+
+  const getConditionPercentage = (condition) => {
+    switch (condition) {
+      case 'NEW': return 100;
+      case 'LIKE_NEW': return 90;
+      case 'USED': return 70;
+      default: return 100;
+    }
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEditTradeTypeChange = (type) => {
+    setEditFormData(prev => ({
+      ...prev,
+      tradeType: type
+    }));
+  };
+
+  const handleEditConditionChange = (condition) => {
+    setEditFormData(prev => ({
+      ...prev,
+      condition: condition
+    }));
+  };
+
+  const validateEditForm = () => {
+    const newErrors = {};
+
+    if (!editFormData.name.trim()) {
+      newErrors.name = 'Tên sản phẩm là bắt buộc';
+    }
+
+    if (!editFormData.description.trim()) {
+      newErrors.description = 'Mô tả sản phẩm là bắt buộc';
+    }
+
+    if (!editFormData.address.trim()) {
+      newErrors.address = 'Địa chỉ là bắt buộc';
+    }
+
+    if (editFormData.tradeType === 'BUY_ONLY' || editFormData.tradeType === 'BOTH') {
+      if (!editFormData.price || parseFloat(editFormData.price) <= 0) {
+        newErrors.price = 'Giá bán phải lớn hơn 0';
+      }
+    }
+
+    if (editFormData.tradeType === 'RENT_ONLY' || editFormData.tradeType === 'BOTH') {
+      if (!editFormData.rentPrice || parseFloat(editFormData.rentPrice) <= 0) {
+        newErrors.rentPrice = 'Giá thuê phải lớn hơn 0';
+      }
+    }
+
+    setEditErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setEditSubmitError('');
+    setEditSuccessMessage('');
+
+    if (!validateEditForm()) {
+      setEditSubmitError('Vui lòng kiểm tra lại thông tin đã nhập');
+      return;
+    }
+
+    setEditLoading(true);
+
+    try {
+      const productData = {
+        name: editFormData.name.trim(),
+        description: editFormData.description.trim(),
+        buyPrice: editFormData.tradeType === 'RENT_ONLY' ? null : parseFloat(editFormData.price) || null,
+        rentPrice: editFormData.tradeType === 'BUY_ONLY' ? null : parseFloat(editFormData.rentPrice) || null,
+        rentUnit: editFormData.tradeType === 'BUY_ONLY' ? null : editFormData.rentUnit,
+        tradeType: editFormData.tradeType,
+        conditionPercentage: getConditionPercentage(editFormData.condition),
+        addressContact: editFormData.address.trim(),
+        status: editFormData.status
+      };
+
+      await updateProduct(editingProduct.id, productData);
+      setEditSuccessMessage('Sản phẩm đã được cập nhật thành công!');
+      
+      // Reload products after 1 second
+      setTimeout(() => {
+        loadProducts();
+        handleCloseEdit();
+      }, 1000);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      setEditSubmitError(error.message || 'Có lỗi xảy ra khi cập nhật sản phẩm');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const imageMap = {
     'Máy tiệt trùng bình sữa UV': sterilizerImg,
     'Máy hút sữa điện tử thông minh': pumpImg,
@@ -116,20 +281,23 @@ const ProductManagementPage = () => {
   };
 
   const getProductImageSrc = (product) => {
-    // Ưu tiên map theo tên sản phẩm (dữ liệu mẫu)
+    // Ưu tiên ảnh từ database (tên file trong public/img-product/)
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      const imageUrl = product.images[0];
+      if (typeof imageUrl === 'string') {
+        // Tên file từ database, load từ /img-product/
+        return `/img-product/${imageUrl}`;
+      }
+      // Nếu là object có imageUrl
+      if (imageUrl?.imageUrl) {
+        return `/img-product/${imageUrl.imageUrl}`;
+      }
+    }
+
+    // Fallback: dùng imageMap nếu có
     if (imageMap[product.name]) return imageMap[product.name];
 
-    // Nếu API trả về images là mảng URL string
-    if (Array.isArray(product.images) && typeof product.images[0] === 'string') {
-      return product.images[0];
-    }
-
-    // Nếu API trả về mảng object { imageUrl }
-    if (Array.isArray(product.images) && product.images[0]?.imageUrl) {
-      return product.images[0].imageUrl;
-    }
-
-    // Fallback
+    // Fallback cuối cùng: placeholder
     return '/api/placeholder/300/200';
   };
 
@@ -208,7 +376,10 @@ const ProductManagementPage = () => {
                 </div>
 
                   <div className="product-actions">
-                    <button className="btn-edit">
+                    <button 
+                      className="btn-edit"
+                      onClick={() => handleEdit(product)}
+                    >
                       ✏️ Chỉnh sửa
                     </button>
                     <button 
@@ -248,6 +419,254 @@ const ProductManagementPage = () => {
           <span className="nav-text">Thêm mới</span>
         </a>
       </nav>
+
+      {/* Edit Product Modal */}
+      {isEditing && (
+        <div className="edit-modal-overlay" onClick={handleCloseEdit}>
+          <div className="edit-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="edit-modal-header">
+              <h2>Chỉnh sửa sản phẩm</h2>
+              <button className="close-button" onClick={handleCloseEdit}>×</button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="edit-product-form">
+              {editSubmitError && (
+                <div className="error-banner">
+                  <span className="error-icon">⚠️</span>
+                  <span className="error-text">{editSubmitError}</span>
+                </div>
+              )}
+
+              {editSuccessMessage && (
+                <div className="success-banner">
+                  <span className="success-icon">✅</span>
+                  <span className="success-text">{editSuccessMessage}</span>
+                </div>
+              )}
+
+              {/* Thông tin cơ bản */}
+              <section className="form-section">
+                <h3 className="section-title">Thông tin cơ bản sản phẩm</h3>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    <span className="required">*</span> Tên sản phẩm
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={editFormData.name}
+                    onChange={handleEditInputChange}
+                    className={`form-input ${editErrors.name ? 'error' : ''}`}
+                    required
+                  />
+                  {editErrors.name && <div className="field-error">{editErrors.name}</div>}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Loại hình</label>
+                  <div className="radio-group">
+                    <button
+                      type="button"
+                      className={`radio-option ${editFormData.tradeType === 'BUY_ONLY' ? 'active' : ''}`}
+                      onClick={() => handleEditTradeTypeChange('BUY_ONLY')}
+                    >
+                      <span className="radio-icon">💰</span>
+                      <div>
+                        <div className="radio-title">Bán</div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className={`radio-option ${editFormData.tradeType === 'RENT_ONLY' ? 'active' : ''}`}
+                      onClick={() => handleEditTradeTypeChange('RENT_ONLY')}
+                    >
+                      <span className="radio-icon">🔄</span>
+                      <div>
+                        <div className="radio-title">Cho thuê</div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className={`radio-option ${editFormData.tradeType === 'BOTH' ? 'active' : ''}`}
+                      onClick={() => handleEditTradeTypeChange('BOTH')}
+                    >
+                      <span className="radio-icon">💎</span>
+                      <div>
+                        <div className="radio-title">Cả hai</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Điều kiện</label>
+                  <div className="condition-group">
+                    <button
+                      type="button"
+                      className={`condition-option ${editFormData.condition === 'NEW' ? 'active' : ''}`}
+                      onClick={() => handleEditConditionChange('NEW')}
+                    >
+                      <span className="condition-icon">✨</span>
+                      <div>
+                        <div className="condition-title">Mới</div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className={`condition-option ${editFormData.condition === 'LIKE_NEW' ? 'active' : ''}`}
+                      onClick={() => handleEditConditionChange('LIKE_NEW')}
+                    >
+                      <span className="condition-icon">🌟</span>
+                      <div>
+                        <div className="condition-title">Như mới</div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className={`condition-option ${editFormData.condition === 'USED' ? 'active' : ''}`}
+                      onClick={() => handleEditConditionChange('USED')}
+                    >
+                      <span className="condition-icon">🔧</span>
+                      <div>
+                        <div className="condition-title">Đã sử dụng</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {/* Chi tiết sản phẩm */}
+              <section className="form-section">
+                <h3 className="section-title">Chi tiết sản phẩm</h3>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    <span className="required">*</span> Mô tả sản phẩm
+                  </label>
+                  <textarea
+                    name="description"
+                    value={editFormData.description}
+                    onChange={handleEditInputChange}
+                    className={`form-textarea ${editErrors.description ? 'error' : ''}`}
+                    rows={4}
+                    required
+                  />
+                  {editErrors.description && <div className="field-error">{editErrors.description}</div>}
+                </div>
+
+                <div className="price-group">
+                  {(editFormData.tradeType === 'BUY_ONLY' || editFormData.tradeType === 'BOTH') && (
+                    <div className="form-group">
+                      <label className="form-label">
+                        <span className="required">*</span> Giá bán (VNĐ)
+                      </label>
+                      <input
+                        type="number"
+                        name="price"
+                        value={editFormData.price}
+                        onChange={handleEditInputChange}
+                        className={`form-input ${editErrors.price ? 'error' : ''}`}
+                        min="0"
+                      />
+                      {editErrors.price && <div className="field-error">{editErrors.price}</div>}
+                    </div>
+                  )}
+
+                  {(editFormData.tradeType === 'RENT_ONLY' || editFormData.tradeType === 'BOTH') && (
+                    <div className="rent-price-group">
+                      <div className="form-group">
+                        <label className="form-label">
+                          <span className="required">*</span> Giá thuê (VNĐ)
+                        </label>
+                        <input
+                          type="number"
+                          name="rentPrice"
+                          value={editFormData.rentPrice}
+                          onChange={handleEditInputChange}
+                          className={`form-input ${editErrors.rentPrice ? 'error' : ''}`}
+                          min="0"
+                        />
+                        {editErrors.rentPrice && <div className="field-error">{editErrors.rentPrice}</div>}
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Đơn vị thời gian</label>
+                        <select
+                          name="rentUnit"
+                          value={editFormData.rentUnit}
+                          onChange={handleEditInputChange}
+                          className="form-select"
+                        >
+                          <option value="DAY">Ngày</option>
+                          <option value="WEEK">Tuần</option>
+                          <option value="MONTH">Tháng</option>
+                          <option value="YEAR">Năm</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Địa chỉ */}
+              <section className="form-section">
+                <h3 className="section-title">Địa chỉ</h3>
+                <div className="form-group">
+                  <label className="form-label">
+                    <span className="required">*</span> Địa chỉ
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={editFormData.address}
+                    onChange={handleEditInputChange}
+                    className={`form-input ${editErrors.address ? 'error' : ''}`}
+                    required
+                  />
+                  {editErrors.address && <div className="field-error">{editErrors.address}</div>}
+                </div>
+              </section>
+
+              {/* Trạng thái */}
+              <section className="form-section">
+                <h3 className="section-title">Trạng thái</h3>
+                <div className="form-group">
+                  <label className="form-label">Trạng thái sản phẩm</label>
+                  <select
+                    name="status"
+                    value={editFormData.status}
+                    onChange={handleEditInputChange}
+                    className="form-select"
+                  >
+                    <option value="ACTIVE">Đang bán</option>
+                    <option value="HIDDEN">Ẩn</option>
+                    <option value="SOLD_OUT">Hết hàng</option>
+                  </select>
+                </div>
+              </section>
+
+              {/* Form Actions */}
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={handleCloseEdit}
+                  disabled={editLoading}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="submit-button"
+                  disabled={editLoading}
+                >
+                  {editLoading ? 'Đang cập nhật...' : 'Cập nhật'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 
