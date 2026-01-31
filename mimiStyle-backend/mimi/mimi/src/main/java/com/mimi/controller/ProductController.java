@@ -9,9 +9,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -121,6 +129,117 @@ public class ProductController {
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{productId}/images/{filename}")
+    public ResponseEntity<?> deleteProductImage(@PathVariable Long productId, @PathVariable String filename) {
+        try {
+            // Kiểm tra xem ảnh bị xóa có phải thumbnail không
+            List<ProductImage> deletingImages = productImageRepository.findByProductIdAndImageUrl(productId, filename);
+            boolean wasThumbnail = deletingImages.stream().anyMatch(img -> Boolean.TRUE.equals(img.getIsThumbnail()));
+            
+            // Xóa file khỏi thư mục
+            String frontendImgPath = "../mimiStyle-frontend/src/assets/img-product/";
+            Path imagePath = Paths.get(frontendImgPath).resolve(filename);
+            
+            if (Files.exists(imagePath)) {
+                Files.delete(imagePath);
+            }
+            
+            // Xóa record khỏi database
+            if (!deletingImages.isEmpty()) {
+                productImageRepository.deleteAll(deletingImages);
+            }
+            
+            // Nếu ảnh bị xóa là thumbnail, set ảnh đầu tiên còn lại làm thumbnail
+            if (wasThumbnail) {
+                List<ProductImage> remainingImages = productImageRepository.findByProductId(productId);
+                if (!remainingImages.isEmpty()) {
+                    ProductImage newThumbnail = remainingImages.get(0);
+                    newThumbnail.setIsThumbnail(true);
+                    productImageRepository.save(newThumbnail);
+                }
+            }
+            
+            return ResponseEntity.ok().body("Đã xóa ảnh thành công");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Lỗi khi xóa ảnh: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/images/{filename}")
+    public ResponseEntity<byte[]> getProductImage(@PathVariable String filename) {
+        try {
+            String frontendImgPath = "../mimiStyle-frontend/src/assets/img-product/";
+            Path imagePath = Paths.get(frontendImgPath).resolve(filename);
+            
+            if (!Files.exists(imagePath)) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            byte[] imageBytes = Files.readAllBytes(imagePath);
+            
+            // Determine content type based on file extension
+            String contentType = "image/jpeg"; // default
+            String extension = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+            switch (extension) {
+                case "png":
+                    contentType = "image/png";
+                    break;
+                case "gif":
+                    contentType = "image/gif";
+                    break;
+                case "webp":
+                    contentType = "image/webp";
+                    break;
+            }
+            
+            return ResponseEntity.ok()
+                    .header("Content-Type", contentType)
+                    .body(imageBytes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/upload-images")
+    public ResponseEntity<?> uploadProductImages(@RequestParam("files") MultipartFile[] files) {
+        try {
+            List<String> savedFilenames = new ArrayList<>();
+            
+            // Đường dẫn đến thư mục img-product trong frontend
+            String frontendImgPath = "../mimiStyle-frontend/src/assets/img-product/";
+            Path uploadPath = Paths.get(frontendImgPath);
+            
+            // Tạo thư mục nếu chưa tồn tại
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            
+            for (MultipartFile file : files) {
+                if (file.isEmpty()) continue;
+                
+                // Tạo tên file unique
+                String timestamp = String.valueOf(System.currentTimeMillis());
+                String random = UUID.randomUUID().toString().substring(0, 8);
+                String originalFilename = file.getOriginalFilename();
+                String extension = originalFilename != null ? 
+                    originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
+                String filename = "product_" + timestamp + "_" + random + extension;
+                
+                // Lưu file vào thư mục frontend
+                Path filePath = uploadPath.resolve(filename);
+                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+                
+                savedFilenames.add(filename);
+            }
+            
+            return ResponseEntity.ok(savedFilenames);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Lỗi khi upload ảnh: " + e.getMessage());
+        }
     }
 
     @PostMapping("/{id}/images")

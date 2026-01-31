@@ -140,6 +140,42 @@ export async function getProductById(id) {
   return response.json();
 }
 
+export async function uploadProductImages(files) {
+  const formData = new FormData();
+  
+  for (let i = 0; i < files.length; i++) {
+    formData.append('files', files[i]);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/products/upload-images`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Không thể upload ảnh sản phẩm');
+  }
+
+  return response.json();
+}
+
+export async function deleteProductImage(productId, filename) {
+  const response = await fetch(`${API_BASE_URL}/products/${productId}/images/${filename}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Không thể xóa ảnh sản phẩm');
+  }
+
+  return response.text();
+}
+
 export async function saveProductImageNames(productId, filenames) {
   const response = await fetch(`${API_BASE_URL}/products/${productId}/images`, {
     method: 'POST',

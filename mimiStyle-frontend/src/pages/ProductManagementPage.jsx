@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Upload, X } from 'lucide-react';
 import Layout from '../components/layout/Layout';
-import { getUserProducts, deleteProduct, updateProduct } from '../api/product';
+import { getUserProducts, deleteProduct, updateProduct, uploadProductImages, saveProductImageNames, deleteProductImage } from '../api/product';
 import { API_ORIGIN } from '../api/config';
 import sterilizerImg from '../assets/img-product/may-tiet-trung-binh-sua-co-say-kho-bang-tia-uv-spectra-1.jpg';
 import pumpImg from '../assets/img-product/May-hut-sua-dien-doi-Resonance-3-Fb1160VN-3.jpeg';
@@ -26,7 +27,9 @@ const ProductManagementPage = () => {
     rentPrice: '',
     rentUnit: 'MONTH',
     address: '',
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    images: [],
+    imageFilenames: []
   });
   const [editErrors, setEditErrors] = useState({});
   const [editLoading, setEditLoading] = useState(false);
@@ -135,7 +138,10 @@ const ProductManagementPage = () => {
       rentPrice: product.rentPrice ? product.rentPrice.toString() : '',
       rentUnit: product.rentUnit || 'MONTH',
       address: product.addressContact || '',
-      status: product.status || 'ACTIVE'
+      status: product.status || 'ACTIVE',
+      images: [],
+      imageFilenames: [],
+      existingImages: product.images || []
     });
     setIsEditing(true);
     setEditErrors({});
@@ -155,7 +161,10 @@ const ProductManagementPage = () => {
       rentPrice: '',
       rentUnit: 'MONTH',
       address: '',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      images: [],
+      imageFilenames: [],
+      existingImages: []
     });
     setEditErrors({});
     setEditSubmitError('');
@@ -197,6 +206,61 @@ const ProductManagementPage = () => {
       ...prev,
       condition: condition
     }));
+  };
+
+  const handleEditImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    
+    if (files.length === 0) return;
+    
+    try {
+      // Upload ảnh lên server và lưu vào thư mục frontend
+      const uploadedFilenames = await uploadProductImages(files);
+      
+      setEditFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...files],
+        imageFilenames: [...(prev.imageFilenames || []), ...uploadedFilenames]
+      }));
+      
+      console.log('Đã upload thành công:', uploadedFilenames);
+    } catch (error) {
+      console.error('Lỗi khi upload ảnh:', error);
+      setEditSubmitError('Lỗi khi upload ảnh: ' + error.message);
+    }
+  };
+
+  const removeEditImage = (indexToRemove) => {
+    setEditFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, index) => index !== indexToRemove),
+      imageFilenames: prev.imageFilenames?.filter((_, index) => index !== indexToRemove) || []
+    }));
+  };
+
+  const removeExistingImage = async (imageToRemove) => {
+    // Xác nhận trước khi xóa
+    if (!window.confirm('Bạn có chắc chắn muốn xóa ảnh này? Hành động này không thể hoàn tác.')) {
+      return;
+    }
+    
+    try {
+      // Xóa ảnh khỏi server và database
+      await deleteProductImage(editingProduct.id, imageToRemove);
+      
+      // Cập nhật state để remove ảnh khỏi UI
+      setEditFormData(prev => ({
+        ...prev,
+        existingImages: prev.existingImages?.filter(img => 
+          (typeof img === 'string' ? img : img.imageUrl) !== imageToRemove
+        ) || []
+      }));
+      
+      console.log('Đã xóa ảnh thành công:', imageToRemove);
+    } catch (error) {
+      console.error('Lỗi khi xóa ảnh:', error);
+      setEditSubmitError('Lỗi khi xóa ảnh: ' + error.message);
+    }
   };
 
   const validateEditForm = () => {
@@ -256,6 +320,19 @@ const ProductManagementPage = () => {
       };
 
       await updateProduct(editingProduct.id, productData);
+      
+      // Lưu ảnh mới nếu có
+      if (editFormData.imageFilenames && editFormData.imageFilenames.length > 0) {
+        try {
+          await saveProductImageNames(editingProduct.id, editFormData.imageFilenames);
+        } catch (imageError) {
+          console.error('Error saving image filenames:', imageError);
+          setEditSubmitError('Sản phẩm đã được cập nhật nhưng có lỗi khi lưu ảnh: ' + imageError.message);
+          setEditLoading(false);
+          return;
+        }
+      }
+      
       setEditSuccessMessage('Sản phẩm đã được cập nhật thành công!');
       
       // Reload products after 1 second
@@ -285,10 +362,10 @@ const ProductManagementPage = () => {
     if (Array.isArray(product.images) && product.images.length > 0) {
       const imageUrl = product.images[0];
       if (typeof imageUrl === 'string' && !imageUrl.includes('src/assets')) {
-        return `/img-product/${imageUrl}`;
+        return `http://localhost:8081/api/products/images/${imageUrl}`;
       }
       if (imageUrl?.imageUrl && !imageUrl.imageUrl.includes('src/assets')) {
-        return `/img-product/${imageUrl.imageUrl}`;
+        return `http://localhost:8081/api/products/images/${imageUrl.imageUrl}`;
       }
     }
 
@@ -601,6 +678,100 @@ const ProductManagementPage = () => {
                           <option value="YEAR">Năm</option>
                         </select>
                       </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Hình ảnh sản phẩm */}
+              <section className="form-section">
+                <h3 className="section-title">Hình ảnh sản phẩm</h3>
+                
+                {/* Ảnh hiện tại */}
+                {editFormData.existingImages && editFormData.existingImages.length > 0 && (
+                  <div className="existing-images">
+                    <h4 className="subsection-title">Ảnh hiện tại</h4>
+                    <div className="image-preview-grid">
+                      {editFormData.existingImages.map((img, index) => {
+                        const imageUrl = typeof img === 'string' ? img : img.imageUrl;
+                        return (
+                          <div key={`existing-${index}`} className="image-preview-item">
+                            <button 
+                              type="button"
+                              className="remove-image-btn"
+                              onClick={() => removeExistingImage(imageUrl)}
+                              title="Xóa ảnh vĩnh viễn"
+                            >
+                              <X size={12} />
+                            </button>
+                            <img 
+                              src={getProductImageSrc({images: [img]})}
+                              alt={`Existing ${index + 1}`}
+                              className="preview-image"
+                            />
+                            <div className="image-info">
+                              <span className="image-name">{imageUrl}</span>
+                              {index === 0 && <span className="thumbnail-badge">Ảnh đại diện</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload ảnh mới */}
+                <div className="new-images">
+                  <h4 className="subsection-title">Thêm ảnh mới</h4>
+                  <div className="upload-area">
+                    <input
+                      type="file"
+                      id="edit-images"
+                      multiple
+                      accept="image/*"
+                      onChange={handleEditImageUpload}
+                      className="upload-input"
+                    />
+                    <label htmlFor="edit-images" className="upload-label">
+                      <Upload size={32} className="upload-icon" />
+                      <div className="upload-text">
+                        <div>Kéo & thả nhiều ảnh vào đây hoặc bấm để chọn</div>
+                        <div style={{fontSize: '12px', color: '#9ca3af', marginTop: '4px'}}>
+                          Hỗ trợ JPG, PNG, GIF. Có thể chọn nhiều ảnh cùng lúc.
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Preview ảnh mới */}
+                  {editFormData.images.length > 0 && (
+                    <div className="uploaded-files">
+                      <p>{editFormData.images.length} ảnh mới đã chọn</p>
+                      <div className="image-preview-grid">
+                        {editFormData.images.map((file, index) => (
+                          <div key={`new-${index}`} className="image-preview-item">
+                            <button 
+                              type="button"
+                              className="remove-image-btn"
+                              onClick={() => removeEditImage(index)}
+                              title="Xóa ảnh"
+                            >
+                              <X size={12} />
+                            </button>
+                            <img 
+                              src={URL.createObjectURL(file)} 
+                              alt={`New Preview ${index + 1}`}
+                              className="preview-image"
+                            />
+                            <div className="image-info">
+                              <span className="image-name">{file.name}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="upload-hint">
+                        ✅ Ảnh sẽ được tự động lưu vào thư mục <code>src/assets/img-product/</code>
+                      </p>
                     </div>
                   )}
                 </div>

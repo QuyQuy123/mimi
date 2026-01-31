@@ -54,10 +54,10 @@ export default function ProductDetailPage() {
     if (Array.isArray(product?.images) && product.images.length > 0) {
       const imageUrl = product.images[0];
       if (typeof imageUrl === 'string' && !imageUrl.includes('src/assets')) {
-        return `/img-product/${imageUrl}`;
+        return `http://localhost:8081/api/products/images/${imageUrl}`;
       }
       if (imageUrl?.imageUrl && !imageUrl.imageUrl.includes('src/assets')) {
-        return `/img-product/${imageUrl.imageUrl}`;
+        return `http://localhost:8081/api/products/images/${imageUrl.imageUrl}`;
       }
     }
 
@@ -74,11 +74,11 @@ export default function ProductDetailPage() {
     if (!img) return null;
     if (typeof img === 'string') {
       if (img.includes('src/assets')) return null;
-      return `/img-product/${img}`;
+      return `http://localhost:8081/api/products/images/${img}`;
     }
     if (img.imageUrl) {
       if (img.imageUrl.includes('src/assets')) return null;
-      return `/img-product/${img.imageUrl}`;
+      return `http://localhost:8081/api/products/images/${img.imageUrl}`;
     }
     return null;
   };

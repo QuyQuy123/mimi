@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, MapPin } from 'lucide-react';
+import { Upload, MapPin, X } from 'lucide-react';
 import Layout from '../components/layout/Layout';
-import { createProduct, saveProductImageNames } from '../api/product';
+import { createProduct, saveProductImageNames, uploadProductImages } from '../api/product';
 import '../styles/AddProductPage.css';
 
 const AddProductPage = () => {
@@ -47,35 +47,34 @@ const AddProductPage = () => {
     }));
   };
 
-  const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    const imageFilenames = [];
-    
-    for (const file of files) {
-      // Generate unique filename: product_{timestamp}_{random}.{ext}
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(2, 9);
-      const ext = file.name.split('.').pop() || 'jpg';
-      const filename = `product_${timestamp}_${random}.${ext}`;
-      
-      // Create download link to save file to public/img-product/
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      imageFilenames.push(filename);
-    }
-    
+  const removeImage = (indexToRemove) => {
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images, ...files],
-      imageFilenames: [...(prev.imageFilenames || []), ...imageFilenames]
+      images: prev.images.filter((_, index) => index !== indexToRemove),
+      imageFilenames: prev.imageFilenames?.filter((_, index) => index !== indexToRemove) || []
     }));
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    
+    if (files.length === 0) return;
+    
+    try {
+      // Upload ảnh lên server và lưu vào thư mục frontend
+      const uploadedFilenames = await uploadProductImages(files);
+      
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...files],
+        imageFilenames: [...(prev.imageFilenames || []), ...uploadedFilenames]
+      }));
+      
+      console.log('Đã upload thành công:', uploadedFilenames);
+    } catch (error) {
+      console.error('Lỗi khi upload ảnh:', error);
+      alert('Lỗi khi upload ảnh: ' + error.message);
+    }
   };
 
   const handleCertificateUpload = (e) => {
@@ -312,7 +311,7 @@ const AddProductPage = () => {
           {/* Hình ảnh sản phẩm */}
           <section className="form-section">
             <h2 className="section-title">Hình ảnh sản phẩm</h2>
-            <p className="section-subtitle">Thêm ảnh sản phẩm của bạn. Ảnh đầu tiên sẽ được sử dụng làm ảnh đại diện.</p>
+            <p className="section-subtitle">Thêm nhiều ảnh sản phẩm của bạn. Ảnh đầu tiên sẽ được sử dụng làm ảnh đại diện. Bạn có thể chọn nhiều ảnh cùng lúc.</p>
             
             <div className="upload-area">
               <input
@@ -326,15 +325,39 @@ const AddProductPage = () => {
               <label htmlFor="images" className="upload-label">
                 <Upload size={48} className="upload-icon" />
                 <div className="upload-text">
-                  <div>Kéo & thả ảnh vào đây hoặc bấm để chọn</div>
+                  <div>Kéo & thả nhiều ảnh vào đây hoặc bấm để chọn</div>
+                  <div style={{fontSize: '12px', color: '#9ca3af', marginTop: '4px'}}>Hỗ trợ JPG, PNG, GIF. Có thể chọn nhiều ảnh cùng lúc.</div>
                 </div>
               </label>
             </div>
             {formData.images.length > 0 && (
               <div className="uploaded-files">
                 <p>{formData.images.length} ảnh đã chọn</p>
+                <div className="image-preview-grid">
+                  {formData.images.map((file, index) => (
+                    <div key={index} className="image-preview-item">
+                      <button 
+                        type="button"
+                        className="remove-image-btn"
+                        onClick={() => removeImage(index)}
+                        title="Xóa ảnh"
+                      >
+                        ×
+                      </button>
+                      <img 
+                        src={URL.createObjectURL(file)} 
+                        alt={`Preview ${index + 1}`}
+                        className="preview-image"
+                      />
+                      <div className="image-info">
+                        <span className="image-name">{file.name}</span>
+                        {index === 0 && <span className="thumbnail-badge">Ảnh đại diện</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
                 <p className="upload-hint">
-                  ⚠️ Vui lòng copy các ảnh đã tải xuống vào thư mục <code>public/img-product/</code>
+                  ✅ Ảnh sẽ được tự động lưu vào thư mục <code>src/assets/img-product/</code>
                 </p>
               </div>
             )}
