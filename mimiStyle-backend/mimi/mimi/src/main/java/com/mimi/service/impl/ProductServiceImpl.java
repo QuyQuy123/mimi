@@ -32,8 +32,12 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product saveProduct(Product product) {
-        // Set default seller (first user) if not provided
-        if (product.getSeller() == null) {
+        // Nếu request gửi seller.id thì dùng user đó làm người bán; nếu không mới dùng user đầu tiên (mặc định)
+        if (product.getSeller() != null && product.getSeller().getId() != null) {
+            User seller = userRepository.findById(product.getSeller().getId())
+                .orElseThrow(() -> new RuntimeException("Người bán không tồn tại"));
+            product.setSeller(seller);
+        } else if (product.getSeller() == null) {
             User defaultSeller = userRepository.findAll().stream().findFirst()
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng trong hệ thống"));
             product.setSeller(defaultSeller);

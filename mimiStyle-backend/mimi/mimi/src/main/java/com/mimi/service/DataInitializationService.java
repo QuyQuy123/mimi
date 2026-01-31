@@ -82,10 +82,10 @@ public class DataInitializationService {
             product1.setIsNew(true);
             product1.setSeller(defaultUser);
             product1.setCategory(toyCategory);
-            // Images
+            // Chỉ lưu tên file (backend GET /api/products/images/{filename} dùng filename)
             List<ProductImage> images1 = new ArrayList<>();
             images1.add(new ProductImage(null, product1,
-                    "src/assets/img-product/may-tiet-trung-binh-sua-co-say-kho-bang-tia-uv-spectra-1.jpg",
+                    "may-tiet-trung-binh-sua-co-say-kho-bang-tia-uv-spectra-1.jpg",
                     true));
             product1.setImages(images1);
             productRepository.save(product1);
@@ -106,7 +106,7 @@ public class DataInitializationService {
             product2.setCategory(toyCategory);
             List<ProductImage> images2 = new ArrayList<>();
             images2.add(new ProductImage(null, product2,
-                    "src/assets/img-product/May-hut-sua-dien-doi-Resonance-3-Fb1160VN-3.jpeg",
+                    "May-hut-sua-dien-doi-Resonance-3-Fb1160VN-3.jpeg",
                     true));
             product2.setImages(images2);
             productRepository.save(product2);
@@ -127,7 +127,7 @@ public class DataInitializationService {
             product3.setCategory(cribCategory);
             List<ProductImage> images3 = new ArrayList<>();
             images3.add(new ProductImage(null, product3,
-                    "src/assets/img-product/top-5-thuong-hieu-noi-cho-be-duoc-ua-chuong-nhat-hien-nay-2020-1595675197.png",
+                    "top-5-thuong-hieu-noi-cho-be-duoc-ua-chuong-nhat-hien-nay-2020-1595675197.png",
                     true));
             product3.setImages(images3);
             productRepository.save(product3);
@@ -149,7 +149,7 @@ public class DataInitializationService {
             product4.setCategory(strollerCategory);
             List<ProductImage> images4 = new ArrayList<>();
             images4.add(new ProductImage(null, product4,
-                    "src/assets/img-product/xe-day-tre-em-joie-versatrax-lagoon.jpg",
+                    "xe-day-tre-em-joie-versatrax-lagoon.jpg",
                     true));
             product4.setImages(images4);
             productRepository.save(product4);
@@ -170,7 +170,7 @@ public class DataInitializationService {
             product5.setCategory(chairCategory);
             List<ProductImage> images5 = new ArrayList<>();
             images5.add(new ProductImage(null, product5,
-                    "src/assets/img-product/ghe-an-dam-umoo-1606186868.jpg",
+                    "ghe-an-dam-umoo-1606186868.jpg",
                     true));
             product5.setImages(images5);
             productRepository.save(product5);
@@ -191,7 +191,7 @@ public class DataInitializationService {
             product6.setCategory(toyCategory);
             List<ProductImage> images6 = new ArrayList<>();
             images6.add(new ProductImage(null, product6,
-                    "src/assets/img-product/z6021933351086_28eb8d7e91cc13e47c6e338d1bea00f3.jpg",
+                    "z6021933351086_28eb8d7e91cc13e47c6e338d1bea00f3.jpg",
                     true));
             product6.setImages(images6);
             productRepository.save(product6);

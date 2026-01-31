@@ -1,11 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, PackageCheck } from 'lucide-react';
+import { PackageCheck } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import { getRevenueSummary, getSoldProducts } from '../api/revenue';
 import { updateOrderStatus } from '../api/order';
-import { API_ORIGIN } from '../api/config';
+import { API_BASE_URL } from '../api/config';
 import '../styles/RevenuePage.css';
+
+const PLACEHOLDER_IMG = 'https://via.placeholder.com/48x48/f0f0f0/666?text=SP';
+
+function buildProductImageSrc(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== 'string' || !imageUrl.trim()) return null;
+  const raw = imageUrl.trim();
+  if (raw.startsWith('http')) return raw;
+  const base = API_BASE_URL.replace(/\/$/, '');
+  if (raw.startsWith('/')) return base.replace(/\/api\/?$/, '') + raw;
+  return `${base}/products/images/${raw}`;
+}
+
+function groupSoldProductsByOrder(soldProducts) {
+  const byOrder = new Map();
+  for (const p of soldProducts) {
+    const orderId = p.orderId;
+    if (!byOrder.has(orderId)) {
+      byOrder.set(orderId, {
+        orderId,
+        orderStatus: p.orderStatus || 'PENDING',
+        soldDate: p.soldDate,
+        items: [],
+        orderTotal: 0,
+      });
+    }
+    const order = byOrder.get(orderId);
+    const amount = Number(p.totalAmount) || 0;
+    order.items.push({
+      id: p.id,
+      name: p.name,
+      imageUrl: p.imageUrl,
+      quantity: p.quantity ?? 0,
+      totalAmount: amount,
+    });
+    order.orderTotal += amount;
+  }
+  return Array.from(byOrder.values()).sort((a, b) => {
+    const dateA = a.soldDate ? new Date(a.soldDate).getTime() : 0;
+    const dateB = b.soldDate ? new Date(b.soldDate).getTime() : 0;
+    return dateB - dateA;
+  });
+}
 
 const RevenuePage = () => {
   const navigate = useNavigate();
@@ -14,11 +56,7 @@ const RevenuePage = () => {
   const [revenueSummary, setRevenueSummary] = useState(null);
   const [soldProducts, setSoldProducts] = useState([]);
   const [confirmingOrderId, setConfirmingOrderId] = useState(null);
-  const [filters, setFilters] = useState({
-    startDate: '2024-07-15',
-    endDate: '2025-10-17',
-    category: 'all'
-  });
+  // Tạm thời không dùng lọc — list tất cả đơn hàng đã bán
 
   useEffect(() => {
     const saved = sessionStorage.getItem('user');
@@ -37,21 +75,16 @@ const RevenuePage = () => {
 
   useEffect(() => {
     let cancelled = false;
-    const startDate = filters.startDate;
-    const endDate = filters.endDate;
-    const category = filters.category === 'all' ? null : filters.category;
-
     if (userId == null) {
       setLoading(false);
       setRevenueSummary({ totalRevenue: 0, totalProductsSold: 0, period: '' });
       setSoldProducts([]);
       return;
     }
-
     setLoading(true);
     Promise.all([
-      getRevenueSummary(userId, startDate, endDate, category),
-      getSoldProducts(userId, startDate, endDate, category)
+      getRevenueSummary(userId, null, null, null),
+      getSoldProducts(userId, null, null, null)
     ])
       .then(([summaryData, productsData]) => {
         if (!cancelled) {
@@ -69,9 +102,10 @@ const RevenuePage = () => {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-
     return () => { cancelled = true; };
-  }, [userId, filters.startDate, filters.endDate, filters.category]);
+  }, [userId]);
+
+  const ordersBySeller = useMemo(() => groupSoldProductsByOrder(soldProducts), [soldProducts]);
 
   const handleConfirmOrder = async (orderId) => {
     if (!orderId) return;
@@ -92,16 +126,9 @@ const RevenuePage = () => {
     }
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
   const formatPrice = (price) => {
     const n = Number(price);
-    return new Intl.NumberFormat('vi-VN').format(Number.isNaN(n) ? 0 : n) + ' VNĐ';
+    return new Intl.NumberFormat('vi-VN').format(Number.isNaN(n) ? 0 : n) + ' ₫';
   };
 
   const formatDate = (dateString) => {
@@ -111,162 +138,121 @@ const RevenuePage = () => {
     return date.toLocaleDateString('vi-VN');
   };
 
+  const getStatusLabel = (status) => {
+    const s = (status || '').toUpperCase();
+    if (s === 'PENDING') return 'Chờ xử lý';
+    if (s === 'CONFIRMED') return 'Đã xác nhận';
+    if (s === 'SHIPPING') return 'Đang vận chuyển';
+    if (s === 'COMPLETED') return 'Đã giao';
+    if (s === 'CANCELLED') return 'Đã hủy';
+    return status || '—';
+  };
+
   const summary = revenueSummary ?? { totalRevenue: 0, totalProductsSold: 0, period: '' };
 
   const content = loading ? (
-    <div className="loading">Đang tải...</div>
+    <div className="revenue-loading">Đang tải...</div>
   ) : (
     <>
       <main className="main-content">
         <div className="revenue-container">
-          {/* Left Panel - Filters & Summary */}
           <div className="left-panel">
-            <div className="filter-section">
-              <h2 className="section-title">Bộ lọc & Tóm tắt</h2>
-              
-              {/* Date Range Filter */}
-              <div className="filter-group">
-                <label className="filter-label">Chọn khoảng ngày</label>
-                <div className="date-range">
-                  <div className="date-input-group">
-                    <Calendar className="date-icon" size={16} />
-                    <input
-                      type="date"
-                      value={filters.startDate}
-                      onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                      className="date-input"
-                    />
-                  </div>
-                  <span className="date-separator">-</span>
-                  <div className="date-input-group">
-                    <Calendar className="date-icon" size={16} />
-                    <input
-                      type="date"
-                      value={filters.endDate}
-                      onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                      className="date-input"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button className="apply-filter-btn">
-                Áp dụng bộ lọc
-              </button>
-
-              {/* Category Filter */}
-              <div className="filter-group">
-                <label className="filter-label">Lọc theo danh mục</label>
-                <select
-                  value={filters.category}
-                  onChange={(e) => handleFilterChange('category', e.target.value)}
-                  className="category-select"
-                >
-                  <option value="all">Tất cả</option>
-                  <option value="binh-sua">Bình sữa</option>
-                  <option value="ta-bim">Tã bỉm</option>
-                  <option value="do-choi">Đồ chơi</option>
-                  <option value="sua-bot">Sữa bột</option>
-                  <option value="xe-day">Xe đẩy</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Revenue Summary */}
             <div className="summary-section">
               <h3 className="summary-title">Tổng quan doanh thu</h3>
               <div className="summary-card">
                 <div className="summary-item">
                   <div className="summary-label">Tổng doanh thu:</div>
-                  <div className="summary-value revenue-value">
-                    {formatPrice(summary.totalRevenue ?? 0)}
-                  </div>
+                  <div className="summary-value revenue-value">{formatPrice(summary.totalRevenue ?? 0)}</div>
+                </div>
+                <div className="summary-item">
+                  <div className="summary-label">Số đơn hàng:</div>
+                  <div className="summary-value products-value">{ordersBySeller.length} đơn</div>
                 </div>
                 <div className="summary-item">
                   <div className="summary-label">Số lượng đã bán:</div>
-                  <div className="summary-value products-value">
-                    {summary.totalProductsSold ?? 0} sản phẩm
-                  </div>
+                  <div className="summary-value products-value">{summary.totalProductsSold ?? 0} sản phẩm</div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Panel - Sold Products */}
           <div className="right-panel">
             <div className="products-section">
               <div className="products-header">
-                <h2 className="section-title">Sản phẩm đã bán</h2>
+                <h2 className="section-title">Đơn hàng của tôi</h2>
                 <p className="section-subtitle">
-                  Tổng quan chi tiết về các sản phẩm đã bán gần đây của bạn.
+                  Các đơn hàng có sản phẩm của bạn, theo từng đơn với danh sách sản phẩm và tổng thu nhập.
                 </p>
               </div>
 
-              <div className="products-table">
-                <div className="table-header">
-                  <div className="header-cell product-col">Hình ảnh</div>
-                  <div className="header-cell name-col">Tên sản phẩm</div>
-                  <div className="header-cell quantity-col">Số lượng</div>
-                  <div className="header-cell amount-col">Tổng thu nhập</div>
-                  <div className="header-cell date-col">Ngày bán</div>
-                  <div className="header-cell action-col">Thao tác</div>
-                </div>
-
-                <div className="table-body">
-                  {soldProducts.length > 0 ? (
-                    soldProducts.map((product, idx) => {
-                      const imgSrc = product.imageUrl && !product.imageUrl.startsWith('http')
-                        ? `${API_ORIGIN}${product.imageUrl}`
-                        : (product.imageUrl || 'https://via.placeholder.com/60x60?text=SP');
-                      const isPending = (product.orderStatus || '').toUpperCase() === 'PENDING';
-                      return (
-                        <div key={`${product.orderId}-${product.id}-${idx}`} className="table-row">
-                          <div className="table-cell product-col">
-                            <img src={imgSrc} alt={product.name} className="product-image" />
+              <div className="revenue-orders-list">
+                {ordersBySeller.length > 0 ? (
+                  ordersBySeller.map((order) => {
+                    const isPending = (order.orderStatus || '').toUpperCase() === 'PENDING';
+                    return (
+                      <div key={order.orderId} className="revenue-order-card">
+                        <div className="revenue-order-header">
+                          <span className="revenue-order-id">Đơn #{order.orderId}</span>
+                          <span className="revenue-order-date">{formatDate(order.soldDate)}</span>
+                          <span className={`revenue-order-status-badge status-${(order.orderStatus || '').toLowerCase()}`}>
+                            {getStatusLabel(order.orderStatus)}
+                          </span>
+                        </div>
+                        <div className="revenue-order-products">
+                          <div className="revenue-order-table-header">
+                            <div className="revenue-order-th img-col">Hình ảnh</div>
+                            <div className="revenue-order-th name-col">Tên sản phẩm</div>
+                            <div className="revenue-order-th qty-col">Số lượng</div>
+                            <div className="revenue-order-th amount-col">Thành tiền</div>
                           </div>
-                          <div className="table-cell name-col">
-                            <span className="product-name">{product.name}</span>
+                          {order.items.map((item, idx) => {
+                            const imgSrc = buildProductImageSrc(item.imageUrl) || PLACEHOLDER_IMG;
+                            return (
+                              <div key={`${order.orderId}-${item.id}-${idx}`} className="revenue-order-row">
+                                <div className="revenue-order-td img-col">
+                                  <img src={imgSrc} alt={item.name} className="revenue-product-thumb" onError={(e) => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMG; }} />
+                                </div>
+                                <div className="revenue-order-td name-col">{item.name}</div>
+                                <div className="revenue-order-td qty-col">{item.quantity}</div>
+                                <div className="revenue-order-td amount-col">{formatPrice(item.totalAmount)}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="revenue-order-footer">
+                          <div className="revenue-order-total">
+                            <span className="revenue-order-total-label">Tổng thu nhập đơn:</span>
+                            <span className="revenue-order-total-value">{formatPrice(order.orderTotal)}</span>
                           </div>
-                          <div className="table-cell quantity-col">
-                            <span className="quantity">{product.quantity}</span>
-                          </div>
-                          <div className="table-cell amount-col">
-                            <span className="amount">{formatPrice(product.totalAmount)}</span>
-                          </div>
-                          <div className="table-cell date-col">
-                            <span className="date">{formatDate(product.soldDate)}</span>
-                          </div>
-                          <div className="table-cell action-col">
+                          <div className="revenue-order-action">
                             {isPending && (
                               <button
                                 type="button"
                                 className="revenue-confirm-order-btn"
-                                onClick={() => handleConfirmOrder(product.orderId)}
-                                disabled={confirmingOrderId === product.orderId}
+                                onClick={() => handleConfirmOrder(order.orderId)}
+                                disabled={confirmingOrderId === order.orderId}
                               >
                                 <PackageCheck size={16} />
                                 <span>Xác nhận đơn hàng</span>
                               </button>
                             )}
                             {!isPending && (
-                              <span className="revenue-order-status">
-                                {product.orderStatus === 'SHIPPING' ? 'Đang vận chuyển' : product.orderStatus}
-                              </span>
+                              <span className="revenue-order-status-text">{getStatusLabel(order.orderStatus)}</span>
                             )}
                           </div>
                         </div>
-                      );
-                    })
-                  ) : (
-                    <div className="empty-state">
-                      <div className="empty-icon">📦</div>
-                      <div className="empty-title">Chưa có sản phẩm nào được bán</div>
-                      <div className="empty-subtitle">
-                        Khi bạn bán sản phẩm thành công, chúng sẽ hiển thị ở đây
                       </div>
+                    );
+                  })
+                ) : (
+                  <div className="empty-state">
+                    <div className="empty-icon">📦</div>
+                    <div className="empty-title">Chưa có đơn hàng nào</div>
+                    <div className="empty-subtitle">
+                      Khi có đơn hàng chứa sản phẩm của bạn, chúng sẽ hiển thị ở đây theo từng đơn.
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

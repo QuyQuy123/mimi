@@ -354,6 +354,168 @@
   color: #64748b;
 }
 
+/* Orders list (by order) */
+.revenue-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-size: 16px;
+  color: #64748b;
+}
+
+.revenue-orders-list {
+  padding: 0 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.revenue-order-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.revenue-order-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.revenue-order-id {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.revenue-order-date {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.revenue-order-status-badge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.revenue-order-status-badge.status-pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.revenue-order-status-badge.status-confirmed,
+.revenue-order-status-badge.status-shipping {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.revenue-order-status-badge.status-completed {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.revenue-order-status-badge.status-cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.revenue-order-products {
+  padding: 12px 20px;
+}
+
+.revenue-order-table-header {
+  display: grid;
+  grid-template-columns: 56px 1fr 80px 120px;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.revenue-order-th.img-col { max-width: 56px; }
+.revenue-order-th.name-col { }
+.revenue-order-th.qty-col { text-align: center; }
+.revenue-order-th.amount-col { text-align: right; }
+
+.revenue-order-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 80px 120px;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+  font-size: 14px;
+}
+
+.revenue-order-row:last-child {
+  border-bottom: none;
+}
+
+.revenue-order-td.img-col { max-width: 56px; }
+.revenue-order-td.name-col { color: #1e293b; font-weight: 500; }
+.revenue-order-td.qty-col { text-align: center; color: #475569; }
+.revenue-order-td.amount-col { text-align: right; font-weight: 600; color: #059669; }
+
+.revenue-product-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.revenue-order-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.revenue-order-total {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.revenue-order-total-label {
+  font-size: 14px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.revenue-order-total-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #059669;
+}
+
+.revenue-order-action {
+  flex-shrink: 0;
+}
+
+.revenue-order-status-text {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
 /* Bottom Navigation */
 .bottom-nav {
   position: fixed;
@@ -470,6 +632,45 @@
   .summary-section,
   .right-panel {
     padding: 20px;
+  }
+  
+  .revenue-orders-list {
+    padding: 0 16px 16px;
+  }
+  
+  .revenue-order-header {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  
+  .revenue-order-products {
+    padding: 10px 16px;
+  }
+  
+  .revenue-order-table-header,
+  .revenue-order-row {
+    grid-template-columns: 44px 1fr 60px 100px;
+    gap: 8px;
+    font-size: 13px;
+  }
+  
+  .revenue-product-thumb {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .revenue-order-footer {
+    padding: 12px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .revenue-order-total-value {
+    font-size: 16px;
+  }
+  
+  .revenue-confirm-order-btn span {
+    display: none;
   }
   
   .table-header,

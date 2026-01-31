@@ -132,7 +132,10 @@ const AddProductPage = () => {
     setLoading(true);
 
     try {
-      // Prepare data for API - Don't send seller and category objects
+      const userJson = sessionStorage.getItem('user');
+      const user = userJson ? JSON.parse(userJson) : null;
+      const sellerId = user?.id ?? user?.userId ?? null;
+
       const productData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
@@ -142,8 +145,8 @@ const AddProductPage = () => {
         tradeType: formData.tradeType,
         conditionPercentage: getConditionPercentage(formData.condition),
         addressContact: formData.address.trim(),
-        status: 'ACTIVE'
-        // Note: seller and category will be handled by backend
+        status: 'ACTIVE',
+        ...(sellerId != null && { seller: { id: sellerId } })
       };
 
       console.log('Sending product data:', productData);

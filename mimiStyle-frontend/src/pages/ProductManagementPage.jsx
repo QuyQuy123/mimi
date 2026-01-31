@@ -35,81 +35,37 @@ const ProductManagementPage = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [editSubmitError, setEditSubmitError] = useState('');
   const [editSuccessMessage, setEditSuccessMessage] = useState('');
+  const [user, setUser] = useState(null);
 
-  // Tạm thời mock user ID - sau này sẽ lấy từ user trong session
-  const userId = 1;
+  const userId = user?.id ?? user?.userId ?? null;
 
   useEffect(() => {
+    const saved = sessionStorage.getItem('user');
+    if (!saved) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    try {
+      setUser(JSON.parse(saved));
+    } catch {
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (userId == null) return;
     loadProducts();
-  }, []);
+  }, [userId]);
 
   const loadProducts = async () => {
+    if (userId == null) return;
     try {
       setLoading(true);
       const data = await getUserProducts(userId);
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading products:', error);
-      // Mock data for demo
-      setProducts([
-        {
-          id: 1,
-          name: 'Nôi em bé đa năng',
-          buyPrice: 3500000,
-          rentPrice: null,
-          status: 'ACTIVE',
-          tradeType: 'BUY_ONLY',
-          images: ['/api/placeholder/300/200']
-        },
-        {
-          id: 2,
-          name: 'Xe đẩy em bé cao cấp',
-          buyPrice: null,
-          rentPrice: 1800000,
-          rentUnit: 'MONTH',
-          status: 'ACTIVE',
-          tradeType: 'RENT_ONLY',
-          images: ['/api/placeholder/300/200']
-        },
-        {
-          id: 3,
-          name: 'Bộ bình sữa tiện lợi',
-          buyPrice: 450000,
-          rentPrice: null,
-          status: 'ACTIVE',
-          tradeType: 'BUY_ONLY',
-          images: ['/api/placeholder/300/200']
-        },
-        {
-          id: 4,
-          name: 'Ghế ăn dặm cho bé',
-          buyPrice: null,
-          rentPrice: 700000,
-          rentUnit: 'MONTH',
-          status: 'ACTIVE',
-          tradeType: 'RENT_ONLY',
-          images: ['/api/placeholder/300/200']
-        },
-        {
-          id: 5,
-          name: 'Set quần áo sơ sinh',
-          buyPrice: 250000,
-          rentPrice: null,
-          status: 'ACTIVE',
-          tradeType: 'BUY_ONLY',
-          images: ['/api/placeholder/300/200']
-        },
-        {
-          id: 6,
-          name: 'Bồn tắm cho bé',
-          buyPrice: 300000,
-          rentPrice: 50000,
-          rentUnit: 'MONTH',
-          status: 'ACTIVE',
-          tradeType: 'BOTH',
-          images: ['/api/placeholder/300/200']
-        }
-      ]);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -399,6 +355,8 @@ const ProductManagementPage = () => {
     };
     return unitMap[unit] || 'tháng';
   };
+
+  if (!user) return null;
 
   const content = loading ? (
     <div className="loading">Đang tải...</div>
