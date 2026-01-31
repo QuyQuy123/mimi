@@ -87,7 +87,9 @@ public class RevenueServiceImpl implements RevenueService {
             orderItem.getQuantity(),
             totalAmount,
             orderItem.getOrder().getCreatedAt().toLocalDate(),
-            categoryName
+            categoryName,
+            orderItem.getOrder().getId(),
+            orderItem.getOrder().getStatus() != null ? orderItem.getOrder().getStatus().name() : "PENDING"
         );
     }
     

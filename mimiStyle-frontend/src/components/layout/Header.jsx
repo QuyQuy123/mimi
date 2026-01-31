@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, ShoppingCart, Package, Settings, LogOut, ChevronRight, Minus, Plus } from 'lucide-react';
+import { Users, ShoppingCart, Package, Settings, LogOut, ChevronRight, Minus, Plus, History } from 'lucide-react';
 import '../../styles/Header.css';
 import { API_ORIGIN } from '../../api/config';
 import { useCart } from '../../context/CartContext';
@@ -222,6 +222,18 @@ export default function Header() {
                 >
                   <Users className="app-dropdown-icon" size={20} />
                   <span>Xem tất cả trang cá nhân</span>
+                  <ChevronRight className="app-dropdown-chevron" size={16} />
+                </button>
+                <button
+                  className="app-dropdown-item"
+                  type="button"
+                  onClick={() => {
+                    setShowDropdown(false);
+                    navigate('/order-history');
+                  }}
+                >
+                  <History className="app-dropdown-icon" size={20} />
+                  <span>Lịch sử mua hàng</span>
                   <ChevronRight className="app-dropdown-chevron" size={16} />
                 </button>
                 <button 

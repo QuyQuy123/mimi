@@ -16,7 +16,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
            "JOIN oi.order o " +
            "JOIN oi.product p " +
            "WHERE p.seller.id = :sellerId " +
-           "AND o.status = 'COMPLETED' " +
+           "AND o.status IN ('PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED') " +
            "AND (:startDate IS NULL OR o.createdAt >= :startDate) " +
            "AND (:endDate IS NULL OR o.createdAt <= :endDate) " +
            "ORDER BY o.createdAt DESC")

@@ -1,0 +1,387 @@
+/* Trang Lịch sử mua hàng - Nền nổi, card đẹp */
+
+.order-history-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  min-height: 60vh;
+  /* Nền trang - tạo độ sâu */
+  background: linear-gradient(160deg, #eef2ff 0%, #e0e7ff 35%, #f1f5f9 100%);
+  position: relative;
+}
+
+/* Khối nội dung chính - nền nổi (một tấm lớn nổi lên) */
+.order-history-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.12),
+    0 12px 24px -8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.order-history-page .order-history-title,
+.order-history-page .order-history-empty,
+.order-history-page .order-history-list {
+  position: relative;
+  z-index: 1;
+}
+
+/* Tiêu đề trang */
+.order-history-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 1.75rem 0;
+  padding: 1rem 1.5rem 0 1.5rem;
+}
+
+.order-history-title svg {
+  color: #7c3aed;
+  filter: drop-shadow(0 1px 2px rgba(124, 58, 237, 0.2));
+}
+
+/* Empty state - nền nổi trong khối trắng */
+.order-history-empty {
+  text-align: center;
+  padding: 3.5rem 2rem;
+  background: linear-gradient(180deg, #fafbff 0%, #fff 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow:
+    0 4px 14px -2px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.order-history-empty p {
+  margin: 0 0 1.25rem 0;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.order-history-btn {
+  padding: 0.65rem 1.6rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow:
+    0 4px 12px rgba(124, 58, 237, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.order-history-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 20px rgba(124, 58, 237, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* Danh sách đơn */
+.order-history-list {
+  list-style: none;
+  padding: 0 0 1rem 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Card đơn hàng - nền nổi */
+.order-history-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow:
+    0 4px 14px -2px rgba(0, 0, 0, 0.06),
+    0 2px 6px -2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: box-shadow 0.25s ease, transform 0.2s ease, border-color 0.2s;
+}
+
+.order-history-card:hover {
+  box-shadow:
+    0 14px 28px -8px rgba(0, 0, 0, 0.1),
+    0 6px 12px -4px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-color: rgba(203, 213, 225, 0.8);
+}
+
+/* Header card - có thể bấm mở/đóng */
+.order-history-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 1.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background 0.2s ease;
+}
+
+.order-history-card-header:hover {
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.order-history-card-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.order-history-id {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.95rem;
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  padding: 0.3rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.order-history-date {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.order-history-total {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #7c3aed;
+}
+
+/* Badge trạng thái - nổi nhẹ */
+.order-history-status {
+  padding: 0.4rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.order-history-status.status-pending {
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+  color: #b45309;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.order-history-status.status-confirmed,
+.order-history-status.status-shipping {
+  background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.order-history-status.status-delivered,
+.order-history-status.status-completed {
+  background: linear-gradient(180deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.order-history-status.status-cancelled {
+  background: linear-gradient(180deg, #fee2e2 0%, #fecaca 100%);
+  color: #b91c1c;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.order-history-chevron {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+/* Nút hủy đơn - nổi nhẹ */
+.order-history-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  margin-left: auto;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #b91c1c;
+  background: linear-gradient(180deg, #fee2e2 0%, #fecaca 100%);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: background 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.order-history-cancel-btn:hover {
+  background: linear-gradient(180deg, #fecaca 0%, #fca5a5 100%);
+  color: #991b1b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(185, 28, 28, 0.15);
+}
+
+/* Nội dung mở rộng */
+.order-history-card-body {
+  padding: 0 1.5rem 1.5rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+  background: linear-gradient(180deg, #f8fafc 0%, #fafbff 50%, #fff 100%);
+  box-shadow: inset 0 8px 12px -10px rgba(0, 0, 0, 0.04);
+}
+
+.order-history-section {
+  margin-top: 1.25rem;
+}
+
+.order-history-section h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+  margin: 0 0 0.6rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Từng sản phẩm trong đơn */
+.order-history-item {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+}
+
+.order-history-item:last-child {
+  border-bottom: none;
+}
+
+.order-history-item img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+.order-history-item-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+.order-history-item-variant {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+.order-history-item-meta {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+/* Địa chỉ giao hàng */
+.order-history-address {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.6;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+/* Tóm tắt tiền */
+.order-history-summary {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.order-history-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #475569;
+  padding: 0.35rem 0;
+}
+
+.order-history-total-row {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1e293b;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid #e2e8f0;
+}
+
+.order-history-total-row span:last-child {
+  color: #7c3aed;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .order-history-page {
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .order-history-page::before {
+    border-radius: 18px;
+  }
+
+  .order-history-title {
+    font-size: 1.35rem;
+    padding: 0.75rem 1rem 0 1rem;
+  }
+
+  .order-history-card {
+    border-radius: 14px;
+  }
+
+  .order-history-card-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .order-history-card-main {
+    gap: 0.75rem;
+  }
+
+  .order-history-card-body {
+    padding: 0 1.25rem 1.25rem;
+  }
+
+  .order-history-empty {
+    border-radius: 16px;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .order-history-cancel-btn span {
+    display: none;
+  }
+
+  .order-history-cancel-btn {
+    padding: 0.5rem;
+  }
+}

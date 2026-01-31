@@ -12,7 +12,9 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    
+
+    List<Order> findByBuyerIdOrderByCreatedAtDesc(Long buyerId);
+
     @Query("SELECT o FROM Order o " +
            "JOIN o.orderItems oi " +
            "JOIN oi.product p " +
@@ -20,8 +22,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
            "AND o.status = :status " +
            "AND (:startDate IS NULL OR o.createdAt >= :startDate) " +
            "AND (:endDate IS NULL OR o.createdAt <= :endDate)")
-    List<Order> findOrdersBySeller(@Param("sellerId") Long sellerId, 
+    List<Order> findOrdersBySeller(@Param("sellerId") Long sellerId,
                                   @Param("status") OrderStatus status,
-                                  @Param("startDate") LocalDateTime startDate, 
+                                  @Param("startDate") LocalDateTime startDate,
                                   @Param("endDate") LocalDateTime endDate);
 }

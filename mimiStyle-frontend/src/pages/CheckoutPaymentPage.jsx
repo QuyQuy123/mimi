@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Truck, Banknote, CreditCard, Wallet } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import { useCart } from '../context/CartContext';
+import { addOrder } from '../utils/orderHistory';
+import { createOrder as createOrderApi } from '../api/order';
 import '../styles/CheckoutPaymentPage.css';
 
 const SHIPPING_OPTIONS = [
@@ -62,11 +64,53 @@ export default function CheckoutPaymentPage() {
     setDiscountCode('');
   };
 
-  const handleCompleteOrder = () => {
-    // TODO: gọi API tạo đơn hàng khi backend có sẵn
-    alert('Đơn hàng đã được đặt thành công. Cảm ơn bạn!');
+  const handleCompleteOrder = async () => {
+    const saved = sessionStorage.getItem('user');
+    const userId = saved ? (() => { try { const u = JSON.parse(saved); return u?.id ?? u?.userId ?? null; } catch { return null; } })() : null;
+    const formData = form ?? {};
+    const paymentMethodMap = { cod: 'COD', vnpay: 'VNPAY', other: 'BANK_TRANSFER' };
+
+    if (userId) {
+      const orderPayload = {
+        id: `order_${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        items: items.map((i) => ({
+          productId: i.productId,
+          product: i.product,
+          colorIndex: i.colorIndex,
+          sizeIndex: i.sizeIndex,
+          colorLabel: i.colorLabel,
+          sizeLabel: i.sizeLabel,
+          quantity: i.quantity,
+        })),
+        form: formData,
+        shippingFee,
+        paymentId,
+        subtotal,
+        discount,
+        total,
+        status: 'pending',
+      };
+      addOrder(userId, orderPayload);
+
+      try {
+        await createOrderApi({
+          buyerId: userId,
+          shippingName: formData.fullName ?? '',
+          shippingPhone: formData.phone ?? '',
+          shippingAddress: [formData.address, formData.wardName, formData.districtName, formData.provinceName].filter(Boolean).join(', '),
+          shippingEmail: formData.email,
+          shippingFee: Number(shippingFee) || 0,
+          discountAmount: Number(discount) || 0,
+          paymentMethod: paymentMethodMap[paymentId] || 'COD',
+          items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        });
+      } catch (err) {
+        console.warn('API tạo đơn hàng thất bại (đơn đã lưu local):', err?.message);
+      }
+    }
     clearCart();
-    navigate('/home', { replace: true });
+    navigate('/order-history', { replace: true });
   };
 
   if (items.length === 0) {

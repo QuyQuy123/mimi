@@ -249,7 +249,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 80px 1fr 100px 140px 120px;
+  grid-template-columns: 80px 1fr 100px 140px 120px 140px;
   gap: 16px;
   padding: 12px 0;
   border-bottom: 2px solid #f1f5f9;
@@ -271,7 +271,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 80px 1fr 100px 140px 120px;
+  grid-template-columns: 80px 1fr 100px 140px 120px 140px;
   gap: 16px;
   padding: 16px 0;
   border-bottom: 1px solid #f1f5f9;
@@ -317,6 +317,40 @@
 
 .date {
   font-size: 14px;
+  color: #64748b;
+}
+
+.action-col {
+  min-width: 0;
+}
+
+.revenue-confirm-order-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0d9488;
+  background: #ccfbf1;
+  border: 1px solid #99f6e4;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.revenue-confirm-order-btn:hover:not(:disabled) {
+  background: #99f6e4;
+  color: #0f766e;
+}
+
+.revenue-confirm-order-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.revenue-order-status {
+  font-size: 13px;
   color: #64748b;
 }
 

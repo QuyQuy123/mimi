@@ -18,4 +18,6 @@ public class SoldProductResponse {
     private BigDecimal totalAmount;
     private LocalDate soldDate;
     private String category;
+    private Long orderId;
+    private String orderStatus;
 }

@@ -168,16 +168,25 @@ public class ProductController {
         }
     }
 
-    @GetMapping("/images/{filename}")
+    @GetMapping("/images/{filename:.+}")
     public ResponseEntity<byte[]> getProductImage(@PathVariable String filename) {
         try {
-            String frontendImgPath = "../mimiStyle-frontend/src/assets/img-product/";
-            Path imagePath = Paths.get(frontendImgPath).resolve(filename);
-            
-            if (!Files.exists(imagePath)) {
-                return ResponseEntity.notFound().build();
+            if (filename == null || filename.isBlank() || filename.contains("..")) {
+                return ResponseEntity.badRequest().build();
             }
-            
+            String frontendImgPath = "../mimiStyle-frontend/src/assets/img-product/";
+            Path basePath = Paths.get(frontendImgPath).toAbsolutePath().normalize();
+            Path imagePath = basePath.resolve(filename).normalize();
+            if (!imagePath.startsWith(basePath) || !Files.exists(imagePath)) {
+                Path fallbackBase = Paths.get("../../../mimiStyle-frontend/src/assets/img-product/").toAbsolutePath().normalize();
+                Path fallbackImage = fallbackBase.resolve(filename).normalize();
+                if (fallbackImage.startsWith(fallbackBase) && Files.exists(fallbackImage)) {
+                    imagePath = fallbackImage;
+                } else {
+                    return ResponseEntity.notFound().build();
+                }
+            }
+
             byte[] imageBytes = Files.readAllBytes(imagePath);
             
             // Determine content type based on file extension

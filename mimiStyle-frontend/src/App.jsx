@@ -10,12 +10,15 @@ import RevenuePage from './pages/RevenuePage';
 import ProfilePage from './pages/ProfilePage';
 import CheckoutPage from './pages/CheckoutPage';
 import CheckoutPaymentPage from './pages/CheckoutPaymentPage';
+import OrderHistoryPage from './pages/OrderHistoryPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 
 function App() {
   return (
     <div className="App">
+      <ErrorBoundary>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -69,6 +72,14 @@ function App() {
           }
         />
         <Route
+          path="/order-history"
+          element={
+            <ProtectedRoute>
+              <OrderHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/checkout"
           element={
             <ProtectedRoute>
@@ -85,6 +96,7 @@ function App() {
           }
         />
       </Routes>
+      </ErrorBoundary>
     </div>
   );
 }

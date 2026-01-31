@@ -1,18 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Minus, Plus } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import { useCart } from '../context/CartContext';
 import { getApplicableVouchers } from '../api/voucher';
+import { getProvincesWithDistricts, getWards } from '../api/location';
 import '../styles/CheckoutPage.css';
 
 // Phí vận chuyển để trống, chưa tính
 const SHIPPING_FEE = 0;
-
-// Placeholder options for location (có thể thay bằng API tỉnh/huyện/xã sau)
-const PROVINCES = ['Chọn tỉnh / thành', 'TP. Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Cần Thơ'];
-const DISTRICTS = ['Chọn quận / huyện', 'Quận 1', 'Quận 3', 'Quận 5', 'Quận 7'];
-const WARDS = ['Chọn phường / xã', 'Phường Bến Nghé', 'Phường Bến Thành', 'Phường Nguyễn Thái Bình'];
 
 function formatPrice(price) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price ?? 0);
@@ -27,13 +23,25 @@ export default function CheckoutPage() {
     phone: '',
     email: '',
     address: '',
-    province: '',
-    district: '',
-    ward: '',
+    provinceCode: '',
+    districtCode: '',
+    wardCode: '',
   });
+  const [provincesWithDistricts, setProvincesWithDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
+  const [loadingLocation, setLoadingLocation] = useState(true);
+  const [loadingWards, setLoadingWards] = useState(false);
   const [vouchers, setVouchers] = useState([]);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [loadingVouchers, setLoadingVouchers] = useState(false);
+
+  const districts = useMemo(() => {
+    if (!form.provinceCode) return [];
+    const province = provincesWithDistricts.find(
+      (p) => p.code === Number(form.provinceCode) || p.code === form.provinceCode
+    );
+    return province?.districts ?? [];
+  }, [provincesWithDistricts, form.provinceCode]);
 
   const subtotal = items.reduce((s, i) => s + (i.product?.price ?? 0) * i.quantity, 0);
   const discount = selectedVoucher ? Number(selectedVoucher.discountValue) : 0;
@@ -61,6 +69,44 @@ export default function CheckoutPage() {
   }, [navigate]);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoadingLocation(true);
+    getProvincesWithDistricts()
+      .then((list) => {
+        if (!cancelled) setProvincesWithDistricts(list);
+      })
+      .catch(() => {
+        if (!cancelled) setProvincesWithDistricts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingLocation(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!form.districtCode) {
+      setWards([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingWards(true);
+    setWards([]);
+    setForm((prev) => ({ ...prev, wardCode: '' }));
+    getWards(Number(form.districtCode))
+      .then((list) => {
+        if (!cancelled) setWards(list);
+      })
+      .catch(() => {
+        if (!cancelled) setWards([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingWards(false);
+      });
+    return () => { cancelled = true; };
+  }, [form.districtCode]);
+
+  useEffect(() => {
     if (items.length === 0) return;
     let cancelled = false;
     setLoadingVouchers(true);
@@ -78,11 +124,34 @@ export default function CheckoutPage() {
   }, [subtotal, items.length]);
 
   const handleInputChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'provinceCode' ? { districtCode: '', wardCode: '' } : {}),
+    }));
   };
 
   const handleContinueToPayment = () => {
-    navigate('/checkout/payment', { state: { form, selectedVoucher } });
+    const province = provincesWithDistricts.find(
+      (p) => p.code === Number(form.provinceCode) || p.code === form.provinceCode
+    );
+    const district = districts.find(
+      (d) => d.code === Number(form.districtCode) || d.code === form.districtCode
+    );
+    const ward = wards.find(
+      (w) => w.code === Number(form.wardCode) || w.code === form.wardCode
+    );
+    navigate('/checkout/payment', {
+      state: {
+        form: {
+          ...form,
+          provinceName: province?.name ?? '',
+          districtName: district?.name ?? '',
+          wardName: ward?.name ?? '',
+        },
+        selectedVoucher,
+      },
+    });
   };
 
   if (items.length === 0 && user) {
@@ -143,31 +212,37 @@ export default function CheckoutPage() {
               <label className="checkout-label">Tỉnh / thành</label>
               <select
                 className="checkout-select"
-                value={form.province}
-                onChange={(e) => handleInputChange('province', e.target.value)}
+                value={form.provinceCode}
+                onChange={(e) => handleInputChange('provinceCode', e.target.value)}
+                disabled={loadingLocation}
               >
-                {PROVINCES.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                <option value="">Chọn tỉnh / thành</option>
+                {provincesWithDistricts.map((p) => (
+                  <option key={p.code} value={p.code}>{p.name}</option>
                 ))}
               </select>
               <label className="checkout-label">Quận / huyện</label>
               <select
                 className="checkout-select"
-                value={form.district}
-                onChange={(e) => handleInputChange('district', e.target.value)}
+                value={form.districtCode}
+                onChange={(e) => handleInputChange('districtCode', e.target.value)}
+                disabled={!form.provinceCode}
               >
-                {DISTRICTS.map((d) => (
-                  <option key={d} value={d}>{d}</option>
+                <option value="">Chọn quận / huyện</option>
+                {districts.map((d) => (
+                  <option key={d.code} value={d.code}>{d.name}</option>
                 ))}
               </select>
               <label className="checkout-label">Phường / xã</label>
               <select
                 className="checkout-select"
-                value={form.ward}
-                onChange={(e) => handleInputChange('ward', e.target.value)}
+                value={form.wardCode}
+                onChange={(e) => handleInputChange('wardCode', e.target.value)}
+                disabled={!form.districtCode || loadingWards}
               >
-                {WARDS.map((w) => (
-                  <option key={w} value={w}>{w}</option>
+                <option value="">Chọn phường / xã</option>
+                {wards.map((w) => (
+                  <option key={w.code} value={w.code}>{w.name}</option>
                 ))}
               </select>
             </div>

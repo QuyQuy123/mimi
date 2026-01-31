@@ -1,63 +1,95 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Calendar, PackageCheck } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import { getRevenueSummary, getSoldProducts } from '../api/revenue';
+import { updateOrderStatus } from '../api/order';
+import { API_ORIGIN } from '../api/config';
 import '../styles/RevenuePage.css';
 
 const RevenuePage = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [revenueSummary, setRevenueSummary] = useState(null);
   const [soldProducts, setSoldProducts] = useState([]);
+  const [confirmingOrderId, setConfirmingOrderId] = useState(null);
   const [filters, setFilters] = useState({
     startDate: '2024-07-15',
     endDate: '2025-10-17',
     category: 'all'
   });
 
-  // Mock user ID - trong thực tế sẽ lấy từ authentication context
-  const userId = 1;
+  useEffect(() => {
+    const saved = sessionStorage.getItem('user');
+    if (!saved) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    try {
+      setUser(JSON.parse(saved));
+    } catch {
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
+
+  const userId = user?.id ?? user?.userId ?? null;
 
   useEffect(() => {
-    loadData();
-  }, [filters]);
+    let cancelled = false;
+    const startDate = filters.startDate;
+    const endDate = filters.endDate;
+    const category = filters.category === 'all' ? null : filters.category;
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // Load revenue summary and sold products
-      const [summaryData, productsData] = await Promise.all([
-        getRevenueSummary(userId, filters.startDate, filters.endDate, filters.category === 'all' ? null : filters.category),
-        getSoldProducts(userId, filters.startDate, filters.endDate, filters.category === 'all' ? null : filters.category)
-      ]);
-      
-      setRevenueSummary(summaryData);
-      setSoldProducts(productsData);
-    } catch (error) {
-      console.error('Error loading revenue data:', error);
-      
-      // Set empty data if no products sold yet
-      setRevenueSummary({
-        totalRevenue: 0,
-        totalProductsSold: 0,
-        period: formatPeriod(filters.startDate, filters.endDate)
-      });
-      
-      setSoldProducts([]);
-    } finally {
+    if (userId == null) {
       setLoading(false);
+      setRevenueSummary({ totalRevenue: 0, totalProductsSold: 0, period: '' });
+      setSoldProducts([]);
+      return;
     }
-  };
 
-  const formatPeriod = (startDate, endDate) => {
-    if (!startDate && !endDate) {
-      return "Tất cả thời gian";
+    setLoading(true);
+    Promise.all([
+      getRevenueSummary(userId, startDate, endDate, category),
+      getSoldProducts(userId, startDate, endDate, category)
+    ])
+      .then(([summaryData, productsData]) => {
+        if (!cancelled) {
+          setRevenueSummary(summaryData);
+          setSoldProducts(Array.isArray(productsData) ? productsData : []);
+        }
+      })
+      .catch((error) => {
+        console.error('Error loading revenue data:', error);
+        if (!cancelled) {
+          setRevenueSummary({ totalRevenue: 0, totalProductsSold: 0, period: '' });
+          setSoldProducts([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [userId, filters.startDate, filters.endDate, filters.category]);
+
+  const handleConfirmOrder = async (orderId) => {
+    if (!orderId) return;
+    const ok = window.confirm('Xác nhận đơn hàng này sẽ chuyển trạng thái sang "Đang vận chuyển". Bạn có chắc muốn xác nhận?');
+    if (!ok) return;
+    try {
+      setConfirmingOrderId(orderId);
+      await updateOrderStatus(orderId, 'SHIPPING');
+      setSoldProducts((prev) =>
+        prev.map((p) =>
+          p.orderId === orderId ? { ...p, orderStatus: 'SHIPPING' } : p
+        )
+      );
+    } catch (err) {
+      alert(err?.message || 'Không thể cập nhật trạng thái đơn hàng');
+    } finally {
+      setConfirmingOrderId(null);
     }
-    
-    const start = startDate ? new Date(startDate).toLocaleDateString('vi-VN') : "Bắt đầu";
-    const end = endDate ? new Date(endDate).toLocaleDateString('vi-VN') : "Hiện tại";
-    
-    return `${start} - ${end}`;
   };
 
   const handleFilterChange = (key, value) => {
@@ -68,13 +100,18 @@ const RevenuePage = () => {
   };
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
+    const n = Number(price);
+    return new Intl.NumberFormat('vi-VN').format(Number.isNaN(n) ? 0 : n) + ' VNĐ';
   };
 
   const formatDate = (dateString) => {
+    if (dateString == null || dateString === '') return '—';
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return '—';
     return date.toLocaleDateString('vi-VN');
   };
+
+  const summary = revenueSummary ?? { totalRevenue: 0, totalProductsSold: 0, period: '' };
 
   const content = loading ? (
     <div className="loading">Đang tải...</div>
@@ -142,13 +179,13 @@ const RevenuePage = () => {
                 <div className="summary-item">
                   <div className="summary-label">Tổng doanh thu:</div>
                   <div className="summary-value revenue-value">
-                    {formatPrice(revenueSummary?.totalRevenue || 0)}
+                    {formatPrice(summary.totalRevenue ?? 0)}
                   </div>
                 </div>
                 <div className="summary-item">
                   <div className="summary-label">Số lượng đã bán:</div>
                   <div className="summary-value products-value">
-                    {revenueSummary?.totalProductsSold || 0} sản phẩm
+                    {summary.totalProductsSold ?? 0} sản phẩm
                   </div>
                 </div>
               </div>
@@ -172,33 +209,54 @@ const RevenuePage = () => {
                   <div className="header-cell quantity-col">Số lượng</div>
                   <div className="header-cell amount-col">Tổng thu nhập</div>
                   <div className="header-cell date-col">Ngày bán</div>
+                  <div className="header-cell action-col">Thao tác</div>
                 </div>
 
                 <div className="table-body">
                   {soldProducts.length > 0 ? (
-                    soldProducts.map(product => (
-                      <div key={product.id} className="table-row">
-                        <div className="table-cell product-col">
-                          <img 
-                            src={product.imageUrl || '/api/placeholder/60/60'} 
-                            alt={product.name}
-                            className="product-image"
-                          />
+                    soldProducts.map((product, idx) => {
+                      const imgSrc = product.imageUrl && !product.imageUrl.startsWith('http')
+                        ? `${API_ORIGIN}${product.imageUrl}`
+                        : (product.imageUrl || 'https://via.placeholder.com/60x60?text=SP');
+                      const isPending = (product.orderStatus || '').toUpperCase() === 'PENDING';
+                      return (
+                        <div key={`${product.orderId}-${product.id}-${idx}`} className="table-row">
+                          <div className="table-cell product-col">
+                            <img src={imgSrc} alt={product.name} className="product-image" />
+                          </div>
+                          <div className="table-cell name-col">
+                            <span className="product-name">{product.name}</span>
+                          </div>
+                          <div className="table-cell quantity-col">
+                            <span className="quantity">{product.quantity}</span>
+                          </div>
+                          <div className="table-cell amount-col">
+                            <span className="amount">{formatPrice(product.totalAmount)}</span>
+                          </div>
+                          <div className="table-cell date-col">
+                            <span className="date">{formatDate(product.soldDate)}</span>
+                          </div>
+                          <div className="table-cell action-col">
+                            {isPending && (
+                              <button
+                                type="button"
+                                className="revenue-confirm-order-btn"
+                                onClick={() => handleConfirmOrder(product.orderId)}
+                                disabled={confirmingOrderId === product.orderId}
+                              >
+                                <PackageCheck size={16} />
+                                <span>Xác nhận đơn hàng</span>
+                              </button>
+                            )}
+                            {!isPending && (
+                              <span className="revenue-order-status">
+                                {product.orderStatus === 'SHIPPING' ? 'Đang vận chuyển' : product.orderStatus}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="table-cell name-col">
-                          <span className="product-name">{product.name}</span>
-                        </div>
-                        <div className="table-cell quantity-col">
-                          <span className="quantity">{product.quantity}</span>
-                        </div>
-                        <div className="table-cell amount-col">
-                          <span className="amount">{formatPrice(product.totalAmount)}</span>
-                        </div>
-                        <div className="table-cell date-col">
-                          <span className="date">{formatDate(product.soldDate)}</span>
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="empty-state">
                       <div className="empty-icon">📦</div>
