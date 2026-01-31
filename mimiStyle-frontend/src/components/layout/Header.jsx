@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Users, ShoppingCart, Package, Settings, LogOut, ChevronRight, Minus, Plus, History } from 'lucide-react';
 import '../../styles/Header.css';
 import { API_ORIGIN } from '../../api/config';
@@ -13,6 +13,8 @@ function formatPrice(price) {
 
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname || '';
   const [user, setUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -91,10 +93,18 @@ export default function Header() {
           <span className="app-logo-text">MiMi</span>
         </div>
         <nav className="app-nav-menu">
-          <button className="app-nav-link" type="button" onClick={() => navigate('/home')}>
+          <button
+            type="button"
+            className={`app-nav-link ${pathname === '/home' || pathname === '/' ? 'active' : ''}`}
+            onClick={() => navigate('/home')}
+          >
             Trang Chủ
           </button>
-          <button className="app-nav-link" type="button" onClick={() => navigate('/products')}>
+          <button
+            type="button"
+            className={`app-nav-link ${pathname.startsWith('/products') ? 'active' : ''}`}
+            onClick={() => navigate('/products')}
+          >
             Quản lý sản phẩm
           </button>
           <button className="app-nav-link" type="button">

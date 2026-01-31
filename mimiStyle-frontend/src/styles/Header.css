@@ -59,6 +59,14 @@
   color: #7c3aed;
 }
 
+.app-nav-link.active {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  text-decoration-thickness: 2px;
+}
+
 .app-header-right {
   display: flex;
   align-items: center;
