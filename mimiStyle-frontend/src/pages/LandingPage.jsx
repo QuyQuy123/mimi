@@ -180,7 +180,7 @@ export default function LandingPage() {
           </div>
           <nav className="landing-nav-menu">
             <button className="landing-nav-link">Trang Chủ</button>
-            <button className="landing-nav-link">Giới Thiệu</button>
+            <button className="landing-nav-link" onClick={() => navigate('/about')}>Giới Thiệu</button>
             <button className="landing-nav-link">Liên Hệ</button>
           </nav>
           <div className="landing-auth-buttons">
@@ -270,6 +270,9 @@ export default function LandingPage() {
               {filteredFeaturedProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
+              {!loading && filteredFeaturedProducts.length === 0 && (
+                <div className="loading-message">Không có sản phẩm nào phù hợp với từ khóa hoặc bộ lọc.</div>
+              )}
             </div>
           )}
         </div>
@@ -286,6 +289,9 @@ export default function LandingPage() {
               {filteredNewProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
+              {!loading && filteredNewProducts.length === 0 && (
+                <div className="loading-message">Không có sản phẩm nào phù hợp với từ khóa hoặc bộ lọc.</div>
+              )}
             </div>
           )}
         </div>

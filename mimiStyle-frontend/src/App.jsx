@@ -15,6 +15,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import CheckoutPaymentPage from './pages/CheckoutPaymentPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
 import RentProductsPage from './pages/RentProductsPage';
+import AboutPage from './pages/AboutPage';
 import UserManagementPage from './pages/UserManagementPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -29,6 +30,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route
           path="/home"
           element={

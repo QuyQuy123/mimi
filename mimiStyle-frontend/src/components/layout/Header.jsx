@@ -100,7 +100,11 @@ export default function Header() {
           >
             Trang Chủ
           </button>
-          <button className="app-nav-link" type="button">
+          <button
+            type="button"
+            className={`app-nav-link ${pathname === '/about' ? 'active' : ''}`}
+            onClick={() => navigate('/about')}
+          >
             Giới Thiệu
           </button>
           <button className="app-nav-link" type="button">
@@ -177,6 +181,7 @@ export default function Header() {
               )}
             </div>
           )}
+          {user ? (
           <div className="app-user-profile-wrapper" ref={dropdownRef}>
           <div className="app-user-profile" onClick={toggleDropdown}>
             <div className="app-user-avatar">
@@ -293,6 +298,16 @@ export default function Header() {
             </div>
           )}
           </div>
+          ) : (
+            <div className="app-header-auth">
+              <button type="button" className="app-header-login-btn" onClick={() => navigate('/login')}>
+                Đăng nhập
+              </button>
+              <button type="button" className="app-header-register-btn" onClick={() => navigate('/register')}>
+                Đăng ký
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

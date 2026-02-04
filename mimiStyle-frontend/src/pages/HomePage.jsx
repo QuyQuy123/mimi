@@ -114,6 +114,27 @@ export default function HomePage() {
     return <span className={`product-status-badge ${info.class}`}>{info.text}</span>;
   };
 
+  // Lọc theo tên/mô tả (không phân biệt hoa thường) và theo loại (Tất cả / Bán / Thuê)
+  const matchesFilters = (product) => {
+    const q = (searchQuery || '').trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      (product.name && product.name.toLowerCase().includes(q)) ||
+      (product.description && product.description.toLowerCase().includes(q));
+
+    const isSale = product.tradeType === 'BUY_ONLY' || product.tradeType === 'BOTH';
+    const isRent = product.tradeType === 'RENT_ONLY' || product.tradeType === 'BOTH';
+    const matchesType =
+      filterType === 'all' ||
+      (filterType === 'sale' && isSale) ||
+      (filterType === 'rent' && isRent);
+
+    return matchesSearch && matchesType;
+  };
+
+  const filteredFeaturedProducts = featuredProducts.filter(matchesFilters);
+  const filteredNewProducts = newProducts.filter(matchesFilters);
+
   const ProductCard = ({ product }) => (
     <div className="product-card">
       <div className="product-card-inner">
@@ -227,9 +248,12 @@ export default function HomePage() {
             <div className="loading-message">Đang tải sản phẩm...</div>
           ) : (
             <div className="products-grid">
-              {featuredProducts.map(product => (
+              {filteredFeaturedProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
+              {!loading && filteredFeaturedProducts.length === 0 && (
+                <div className="loading-message">Không có sản phẩm nào phù hợp với từ khóa hoặc bộ lọc.</div>
+              )}
             </div>
           )}
         </div>
@@ -243,9 +267,12 @@ export default function HomePage() {
             <div className="loading-message">Đang tải sản phẩm...</div>
           ) : (
             <div className="products-grid">
-              {newProducts.map(product => (
+              {filteredNewProducts.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
+              {!loading && filteredNewProducts.length === 0 && (
+                <div className="loading-message">Không có sản phẩm nào phù hợp với từ khóa hoặc bộ lọc.</div>
+              )}
             </div>
           )}
         </div>

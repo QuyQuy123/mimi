@@ -100,15 +100,15 @@ export default function LoginPage() {
             >
               Trang chủ
             </button>
-            <button className="nav-link">Cửa hàng</button>
-            <button className="nav-link">Về chúng tôi</button>
-            <button className="nav-link">Liên hệ</button>
             <button
-              className="nav-button register-btn"
+              className="nav-link"
               type="button"
-              onClick={handleRegister}
+              onClick={() => handleNavigation('/about')}
             >
-              Đăng ký
+              Giới thiệu
+            </button>
+            <button className="nav-link" type="button">
+              Liên hệ
             </button>
           </nav>
         </div>

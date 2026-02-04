@@ -174,17 +174,14 @@ public class ProductController {
             if (filename == null || filename.isBlank() || filename.contains("..")) {
                 return ResponseEntity.badRequest().build();
             }
-            String frontendImgPath = "../mimiStyle-frontend/src/assets/img-product/";
+            // Đường dẫn đến thư mục img-product trong frontend (từ backend lên 3 cấp để tới root)
+            String frontendImgPath = "../../../mimiStyle-frontend/src/assets/img-product/";
             Path basePath = Paths.get(frontendImgPath).toAbsolutePath().normalize();
             Path imagePath = basePath.resolve(filename).normalize();
+            
+            // Kiểm tra security: đảm bảo đường dẫn không vượt ra ngoài basePath
             if (!imagePath.startsWith(basePath) || !Files.exists(imagePath)) {
-                Path fallbackBase = Paths.get("../../../mimiStyle-frontend/src/assets/img-product/").toAbsolutePath().normalize();
-                Path fallbackImage = fallbackBase.resolve(filename).normalize();
-                if (fallbackImage.startsWith(fallbackBase) && Files.exists(fallbackImage)) {
-                    imagePath = fallbackImage;
-                } else {
-                    return ResponseEntity.notFound().build();
-                }
+                return ResponseEntity.notFound().build();
             }
 
             byte[] imageBytes = Files.readAllBytes(imagePath);
@@ -217,9 +214,9 @@ public class ProductController {
         try {
             List<String> savedFilenames = new ArrayList<>();
             
-            // Đường dẫn đến thư mục img-product trong frontend
-            String frontendImgPath = "../mimiStyle-frontend/src/assets/img-product/";
-            Path uploadPath = Paths.get(frontendImgPath);
+            // Đường dẫn đến thư mục img-product trong frontend (từ backend lên 3 cấp để tới root)
+            String frontendImgPath = "../../../mimiStyle-frontend/src/assets/img-product/";
+            Path uploadPath = Paths.get(frontendImgPath).toAbsolutePath().normalize();
             
             // Tạo thư mục nếu chưa tồn tại
             if (!Files.exists(uploadPath)) {

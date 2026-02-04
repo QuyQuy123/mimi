@@ -30,6 +30,7 @@
   justify-content: space-between;
   padding: 0 1.25rem;
   height: 100%;
+  position: relative;
 }
 
 .logo {
@@ -38,6 +39,7 @@
   gap: 0.5rem;
   font-size: 1.5rem;
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .logo-icon {
@@ -54,6 +56,9 @@
   display: flex;
   align-items: center;
   gap: 2rem;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .nav-link {
