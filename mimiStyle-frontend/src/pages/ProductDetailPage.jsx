@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronRight, Minus, Plus } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import { getProductById } from '../api/product';
+import { API_ORIGIN } from '../api/config';
 import { useCart } from '../context/CartContext';
 import sterilizerImg from '../assets/img-product/may-tiet-trung-binh-sua-co-say-kho-bang-tia-uv-spectra-1.jpg';
 import pumpImg from '../assets/img-product/May-hut-sua-dien-doi-Resonance-3-Fb1160VN-3.jpeg';
@@ -54,10 +55,10 @@ export default function ProductDetailPage() {
     if (Array.isArray(product?.images) && product.images.length > 0) {
       const imageUrl = product.images[0];
       if (typeof imageUrl === 'string' && !imageUrl.includes('src/assets')) {
-        return `http://localhost:8081/api/products/images/${imageUrl}`;
+        return `${API_ORIGIN}/api/products/images/${imageUrl}`;
       }
       if (imageUrl?.imageUrl && !imageUrl.imageUrl.includes('src/assets')) {
-        return `http://localhost:8081/api/products/images/${imageUrl.imageUrl}`;
+        return `${API_ORIGIN}/api/products/images/${imageUrl.imageUrl}`;
       }
     }
 
@@ -74,11 +75,11 @@ export default function ProductDetailPage() {
     if (!img) return null;
     if (typeof img === 'string') {
       if (img.includes('src/assets')) return null;
-      return `http://localhost:8081/api/products/images/${img}`;
+      return `${API_ORIGIN}/api/products/images/${img}`;
     }
     if (img.imageUrl) {
       if (img.imageUrl.includes('src/assets')) return null;
-      return `http://localhost:8081/api/products/images/${img.imageUrl}`;
+      return `${API_ORIGIN}/api/products/images/${img.imageUrl}`;
     }
     return null;
   };

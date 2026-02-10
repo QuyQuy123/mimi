@@ -89,11 +89,11 @@ export default function HomePage() {
       const imageUrl = product.images[0];
       if (typeof imageUrl === 'string' && !imageUrl.includes('src/assets')) {
         // Tên file từ database, load từ /img-product/
-        return `http://localhost:8081/api/products/images/${imageUrl}`;
+        return `${API_ORIGIN}/api/products/images/${imageUrl}`;
       }
       // Nếu là object có imageUrl
       if (imageUrl?.imageUrl && !imageUrl.imageUrl.includes('src/assets')) {
-        return `http://localhost:8081/api/products/images/${imageUrl.imageUrl}`;
+        return `${API_ORIGIN}/api/products/images/${imageUrl.imageUrl}`;
       }
     }
 

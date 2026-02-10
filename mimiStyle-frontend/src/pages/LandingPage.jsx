@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { getAllProducts } from '../api/product';
+import { API_ORIGIN } from '../api/config';
 import sterilizerImg from '../assets/img-product/may-tiet-trung-binh-sua-co-say-kho-bang-tia-uv-spectra-1.jpg';
 import pumpImg from '../assets/img-product/May-hut-sua-dien-doi-Resonance-3-Fb1160VN-3.jpeg';
 import cribImg from '../assets/img-product/top-5-thuong-hieu-noi-cho-be-duoc-ua-chuong-nhat-hien-nay-2020-1595675197.png';
@@ -81,10 +82,10 @@ export default function LandingPage() {
     if (Array.isArray(product.images) && product.images.length > 0) {
       const imageUrl = product.images[0];
       if (typeof imageUrl === 'string' && !imageUrl.includes('src/assets')) {
-        return `http://localhost:8081/api/products/images/${imageUrl}`;
+        return `${API_ORIGIN}/api/products/images/${imageUrl}`;
       }
       if (imageUrl?.imageUrl && !imageUrl.imageUrl.includes('src/assets')) {
-        return `http://localhost:8081/api/products/images/${imageUrl.imageUrl}`;
+        return `${API_ORIGIN}/api/products/images/${imageUrl.imageUrl}`;
       }
     }
 

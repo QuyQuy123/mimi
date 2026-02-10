@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-MimiApplication<mimi>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.mimi.MimiApplication",
+            "projectName": "mimi",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
