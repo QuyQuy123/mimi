@@ -9,6 +9,8 @@ services:
     # ports: - "3306:3306" # Nên ẩn đi nếu không cần dùng tool DB bên ngoài kết nối vào
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - mimi-network
 
   backend:
     image: hoangduy20407/mimi-backend:latest
@@ -21,9 +23,11 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
     volumes:
-      - /opt/mimiStyle/uploads:/uploads
+      - /home/ubuntu/uploads:/home/ubuntu/uploads
     depends_on:
       - mysql-db
+    networks:
+      - mimi-network
 
   frontend:
     image: hoangduy20407/mimi-frontend:latest
@@ -34,6 +38,8 @@ services:
       - "80"
     depends_on:
       - backend
+    networks:
+      - mimi-network
 
   nginx-proxy-manager:
     image: 'jc21/nginx-proxy-manager:latest'
@@ -48,6 +54,13 @@ services:
       - ./letsencrypt:/etc/letsencrypt
     depends_on:
       - frontend
+    networks:
+      - mimi-network
+      
+networks:
+  mimi-network:
+    driver: bridge
+    external: true
 
 volumes:
   mysql_data:

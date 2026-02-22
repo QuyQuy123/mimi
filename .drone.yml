@@ -1,0 +1,63 @@
+kind: pipeline
+type: docker
+name: mimishop-production-cicd
+
+steps:
+  # 1. Build và Push Backend Image lên Docker Hub
+  - name: build-and-push-backend
+    image: plugins/docker
+    settings:
+      context: ./mimiStyle-backend
+      dockerfile: ./mimiStyle-backend/mimi/mimi/Dockerfile
+      repo: hoangduy20407/mimi-backend
+      tags: latest
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      branch:
+        - main
+
+  # 2. Build và Push Frontend Image lên Docker Hub
+  - name: build-and-push-frontend
+    image: plugins/docker
+    settings:
+      context: ./mimiStyle-frontend
+      dockerfile: ./mimiStyle-frontend/Dockerfile
+      repo: hoangduy20407/mimi-frontend
+      tags: latest
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      branch:
+        - main
+
+  # 3. Kết nối SSH vào VPS để triển khai (Deploy)
+  - name: deploy-to-vps
+    image: appleboy/drone-ssh
+    settings:
+      host:
+        from_secret: 160.30.113.124
+      username: root
+      key:
+        from_secret: ssh_password
+      port: 22
+      script:
+        - cd /opt/mimi
+        # Kéo bản mới nhất của 2 image vừa push xong
+        - docker compose pull mimi-backend mimi-frontend
+        # Khởi động lại chỉ 2 dịch vụ này, giữ nguyên MySQL và Nginx Proxy Manager
+        - docker compose up -d mimi-backend mimi-frontend
+        # Dọn dẹp các image cũ (dangling) để tránh đầy ổ cứng VPS
+        - docker image prune -f
+    when:
+      branch:
+        - main
+
+# Drone sẽ chỉ chạy pipeline này khi bạn push code vào nhánh main
+trigger:
+  branch:
+    - main
